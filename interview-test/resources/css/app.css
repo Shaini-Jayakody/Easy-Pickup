@@ -1,0 +1,275 @@
+/* ---------- Reset ---------- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 100vh;
+    background: #ffffff;
+}
+
+/* ---------- Home Page (Full Width) ---------- */
+.home-wrapper {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.home-content {
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+    padding: 20px;
+}
+
+.home-brand {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.home-brand span {
+    color: #87CEEB;
+}
+
+.home-subtitle {
+    color: #7f8c8d;
+    font-size: 1.1rem;
+    margin-top: 4px;
+}
+
+.home-description {
+    color: #555;
+    line-height: 1.8;
+    margin: 25px 0 35px;
+    font-size: 1rem;
+}
+
+.home-description strong {
+    color: #2c3e50;
+}
+
+/* ---------- Splash Screen ---------- */
+.splash-container {
+    text-align: center;
+    padding: 40px 20px;
+    max-width: 600px;
+    width: 100%;
+    animation: fadeIn 1s ease-in;
+}
+
+.brand h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #2c3e50;
+    letter-spacing: -1px;
+}
+
+.brand h1 span {
+    color: #87CEEB;
+}
+
+.brand p {
+    font-size: 1.1rem;
+    color: #7f8c8d;
+    margin-top: 4px;
+}
+
+.divider-line {
+    width: 60px;
+    height: 3px;
+    background: #87CEEB;
+    margin: 20px auto;
+    border-radius: 2px;
+}
+
+.welcome-message h4 {
+    color: #87CEEB;
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 8px;
+}
+
+.welcome-message p {
+    color: #555;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.loader {
+    width: 40px;
+    height: 40px;
+    margin: 30px auto 0;
+    border: 3px solid #e0e0e0;
+    border-top-color: #87CEEB;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+/* ---------- Buttons ---------- */
+.btn-group {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn {
+    flex: 1;
+    padding: 14px 35px;
+    border: none;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.25s ease;
+    min-width: 140px;
+    max-width: 220px;
+}
+
+.btn-primary {
+    background: #87CEEB;
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(135, 206, 235, 0.3);
+}
+
+.btn-primary:hover {
+    background: #6bb8d9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(135, 206, 235, 0.4);
+}
+
+.btn-dark {
+    background: #2c3e50;
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(44, 62, 80, 0.25);
+}
+
+.btn-dark:hover {
+    background: #1a2a3a;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(44, 62, 80, 0.35);
+}
+
+.btn-ghost {
+    background: rgba(255, 255, 255, 0.9);
+    color: #2c3e50;
+    width: 100%;
+    max-width: 100%;
+    border: 2px solid #e0e0e0;
+    margin-top: 6px;
+}
+
+.btn-ghost:hover {
+    background: #ffffff;
+    border-color: #87CEEB;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* ---------- Divider ---------- */
+.divider {
+    display: flex;
+    align-items: center;
+    margin: 28px 0;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.divider span {
+    padding: 0 16px;
+    color: #aaa;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ---------- Features ---------- */
+.features {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 25px;
+    flex-wrap: wrap;
+}
+
+.features span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.features svg {
+    width: 18px;
+    height: 18px;
+    fill: #87CEEB;
+    flex-shrink: 0;
+}
+
+/* ---------- Footer ---------- */
+.footer {
+    margin-top: 35px;
+    font-size: 0.8rem;
+    color: #aaa;
+}
+
+/* ---------- Animations ---------- */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 480px) {
+    .home-brand {
+        font-size: 2.5rem;
+    }
+
+    .btn {
+        flex: 1 1 100%;
+        max-width: 100%;
+        padding: 13px;
+    }
+
+    .btn-group {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .features {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .brand h1 {
+        font-size: 2.2rem;
+    }
+
+    .welcome-message h4 {
+        font-size: 1.2rem;
+    }
+
+    .home-content {
+        padding: 10px;
+    }
+}
