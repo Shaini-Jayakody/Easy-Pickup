@@ -9,15 +9,30 @@ use Illuminate\Http\Request;
 use App\Models\CarDetail\CarModel as Model;
 use App\Models\CarDetail\CarBrand as Brand;
 use App\Models\CarDetail\Car as CarDetail;
+use Yajra\DataTables\Facades\DataTables;
+
 
 class CarController extends Controller
 {
     use Car;
 
-    public function index()
+    public function index(Request $request)
     {
-        $cars = CarDetail::with(['model','model.brand'])->paginate(10);
-        return view('car-details.cars.index',compact('cars'));
+        if ($request->ajax()) {
+            $cars = CarDetail::with(['model', 'model.brand'])->select('tbl_cars.*');
+            
+            return DataTables::of($cars)
+                ->addIndexColumn()
+                ->addColumn('brand', function($car) {
+                    return $car->model->brand->name ?? 'N/A';
+                })
+                ->addColumn('model_name', function($car) {
+                    return $car->model->name ?? 'N/A';
+                })
+                ->make(true);
+        }
+
+        return view('car-details.cars.index');
     }
 
     public function form()
@@ -39,5 +54,6 @@ class CarController extends Controller
         ];
 
         $this->saveCar($carArray);
+         return redirect()->route('car')->with('success', 'Car added successfully!');
     }
 }
