@@ -20,6 +20,14 @@ class CarController extends Controller
     {
         if ($request->ajax()) {
             $cars = CarDetail::with(['model', 'model.brand'])->select('tbl_cars.*');
+
+
+           //brand filter 
+            if ($request->filled('brand_id')) {
+                $cars->whereHas('model', function($query) use ($request) {
+                    $query->where('brand_id', $request->brand_id);
+                });
+            }
             
             return DataTables::of($cars)
                 ->addIndexColumn()
@@ -31,6 +39,8 @@ class CarController extends Controller
                 })
                 ->make(true);
         }
+
+        $brands = Brand::all();//pass brand
 
         return view('car-details.cars.index');
     }

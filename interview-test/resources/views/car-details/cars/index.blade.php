@@ -6,11 +6,25 @@
         <div class="panel panel-primary">
             <div class="panel-heading">
                 <h3 class="panel-title">Car List</h3>
-                <a href="{{ route('car.form') }}" class="btn btn-success btn-sm pull-right" style="margin-top: -5px;">
-                    + Add New Car
-                </a>
             </div>
             <div class="panel-body">
+                <!-- Brand Filter Dropdown -->
+                <div class="row" style="margin-bottom: 15px;">
+                    <div class="col-md-3">
+                        <label for="brand-filter">Filter by Brand:</label>
+                        <select id="brand-filter" class="form-control">
+                            <option value="">All Brands</option>
+                            @if(isset($brands) && $brands->count() > 0)
+                                @foreach($brands as $brand)
+                                    <option value="{{ $brand->id }}">{{ $brand->name }}</option>
+                                @endforeach
+                            @else
+                                <option value="" disabled>No brands available</option>
+                            @endif
+                        </select>
+                    </div>
+                </div>
+
                 <table class="table table-bordered table-striped" id="cars-table">
                     <thead>
                         <tr>
@@ -22,7 +36,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- DataTables will populate this automatically -->
+                        <!-- DataTables will populate automatically -->
                     </tbody>
                 </table>
             </div>
@@ -34,10 +48,15 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
-    $('#cars-table').DataTable({
+    var table = $('#cars-table').DataTable({
         processing: true,
         serverSide: true,
-        ajax: "{{ route('car') }}",
+        ajax: {
+            url: "{{ route('car') }}",
+            data: function (d) {
+                d.brand_id = $('#brand-filter').val();
+            }
+        },
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
             { data: 'ref_no', name: 'ref_no' },
@@ -53,6 +72,11 @@ $(document).ready(function() {
             infoEmpty: "No entries found",
             infoFiltered: "(filtered from _MAX_ total entries)",
         }
+    });
+
+    // Reload table if brand filter changes
+    $('#brand-filter').on('change', function() {
+        table.ajax.reload();
     });
 });
 </script>
