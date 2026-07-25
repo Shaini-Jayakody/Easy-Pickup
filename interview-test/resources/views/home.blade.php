@@ -22,8 +22,8 @@
             </p>
 
             <div class="btn-group">
-                <a href="#" class="btn btn-primary">Sign In</a>
-                <a href="#" class="btn btn-dark">Sign Up</a>
+                 <a href="{{ route('login') }}" class="btn btn-primary">Sign In</a>
+                <a href="{{ route('register') }}" class="btn btn-dark">Sign Up</a>
             </div>
 
             <div class="divider">
@@ -53,4 +53,4 @@
         </div>
     </div>
 </body>
-</html>
+</html
