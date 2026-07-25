@@ -55,61 +55,166 @@ body {
     color: #2c3e50;
 }
 
-/* ---------- Splash Screen ---------- */
+
+
+/* ---------- Welcome/Splash Screen ---------- */
 .splash-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    margin: 0;
+    padding: 20px;
+}
+
+.splash-content {
     text-align: center;
-    padding: 40px 20px;
     max-width: 600px;
     width: 100%;
+    padding: 40px 20px;
     animation: fadeIn 1s ease-in;
 }
 
-.brand h1 {
-    font-size: 3rem;
+.splash-content .brand h1 {
+    font-size: 3.5rem;
     font-weight: 700;
     color: #2c3e50;
     letter-spacing: -1px;
+    margin: 0;
 }
 
-.brand h1 span {
+.splash-content .brand h1 span {
     color: #87CEEB;
 }
 
-.brand p {
-    font-size: 1.1rem;
-    color: #7f8c8d;
-    margin-top: 4px;
+.splash-content .welcome-message h4 {
+    color: #87CEEB;
+    font-size: 1.3rem;
+    font-weight: 400;
+    margin-bottom: 5px;
 }
 
-.divider-line {
-    width: 60px;
+/* ---------- Car Animation Container ---------- */
+.car-animation-container {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 40px auto 20px;
+    padding: 30px 0;
+}
+
+/* Road line (dashed line underneath) */
+.road-line {
+    position: absolute;
+    bottom: 5px;
+    left: 0;
+    width: 100%;
     height: 3px;
-    background: #87CEEB;
-    margin: 20px auto;
+    background: repeating-linear-gradient(
+        90deg,
+        #aaa 0px,
+        #aaa 15px,
+        transparent 15px,
+        transparent 25px
+    );
     border-radius: 2px;
 }
 
-.welcome-message h4 {
-    color: #87CEEB;
-    font-size: 1.5rem;
-    font-weight: 400;
-    margin-bottom: 8px;
+/* Progress fill (fills from left to right) */
+.progress-fill {
+    position: absolute;
+    bottom: 5px;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: #87CEEB;
+    border-radius: 2px;
+    animation: fillProgress 3s ease-in-out forwards;
 }
 
-.welcome-message p {
-    color: #555;
-    font-size: 0.95rem;
-    line-height: 1.6;
+/* Car wrapper for animation */
+.car-wrapper {
+    position: relative;
+    width: 100%;
+    height: 60px;
+    overflow: visible;
+    margin-bottom: 10px;
 }
 
-.loader {
-    width: 40px;
-    height: 40px;
-    margin: 30px auto 0;
-    border: 3px solid #e0e0e0;
-    border-top-color: #87CEEB;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+/* Moving car */
+.moving-car {
+    position: absolute;
+    bottom: 10px;
+    left: -80px;
+    width: 100px;
+    height: auto;
+    animation: moveCar 3s ease-in-out forwards;
+}
+
+/* Keyframes for car movement */
+@keyframes moveCar {
+    0% {
+        left: -80px;
+        transform: scaleX(1);
+    }
+    50% {
+        transform: scaleX(1);
+    }
+    99% {
+        transform: scaleX(1);
+    }
+    100% {
+        left: calc(100% - 60px);
+        transform: scaleX(1);
+    }
+}
+
+/* Keyframes for progress fill */
+@keyframes fillProgress {
+    0% {
+        width: 0%;
+    }
+    100% {
+        width: 100%;
+    }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 480px) {
+    .splash-content .brand h1 {
+        font-size: 2.5rem;
+    }
+
+    .moving-car {
+        width: 45px;
+    }
+
+    .car-animation-container {
+        max-width: 280px;
+        padding: 20px 0;
+    }
+
+    @keyframes moveCar {
+        0% {
+            left: -60px;
+        }
+        100% {
+            left: calc(100% - 45px);
+        }
+    }
+}
+
+/* ---------- Animations ---------- */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 /* ---------- Buttons ---------- */

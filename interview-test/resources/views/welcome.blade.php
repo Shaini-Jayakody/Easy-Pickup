@@ -8,17 +8,25 @@
 </head>
 <body>
     <div class="splash-container">
+        <div class="splash-content">
+            <div class="divider-line"></div>
 
-        <div class="divider-line"></div>
+            <div class="welcome-message">
+                <h4>Welcome to</h4>
+                <div class="brand">
+                    <h1>Easy <span>Pickup</span></h1>
+                </div>
+            </div>
 
-        <div class="welcome-message">
-            <h4>Welcome to </h4>
-            <div class="brand">
-            <h1>Easy <span>Pickup</span></h1>
+            <!-- Car Animation -->
+            <div class="car-animation-container">
+                <div class="road-line"></div>
+                <div class="car-wrapper">
+                    <img src="{{ asset('images/car.png') }}" alt="Car" class="moving-car">
+                </div>
+                <div class="progress-fill"></div>
+            </div>
         </div>
-        </div>
-
-        <div class="loader"></div>
     </div>
 
     <script>
