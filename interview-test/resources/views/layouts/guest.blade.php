@@ -4,19 +4,24 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Car Sale</title>
+    <title>Easy Pickup</title>
 
     <!-- Bootstrap 3 CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+
+    @stack('styles')
+
 </head>
 <body>
     <div class="container">
         <div class="row">
-            <div class="col-md-6 col-md-offset-3" style="margin-top: 30px;">
+            <div class="col-md-6 col-md-offset-3" style="margin-top: 20px;">
                 <div class="panel panel-default">
-                    <div class="panel-heading text-center">
-                        <h3>{{ isset($title) ? $title : 'Car Sale' }}</h3>
-                    </div>
+                     <div class="home-brand">
+                           Easy <span>Pickup</span>
+                      </div>
                     <div class="panel-body">
                         {{ $slot }}
                     </div>

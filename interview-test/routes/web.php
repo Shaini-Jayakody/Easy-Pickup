@@ -25,9 +25,11 @@ Route::get('/home', function () {
 
 Route::get('/car', [App\Http\Controllers\CarDetail\CarController::class, 'index'])->name('car');
 
+// Dashboard
 Route::get('/dashboard', function () {
     return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth'])->name('dashboard');
+
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
