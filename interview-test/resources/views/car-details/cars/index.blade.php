@@ -38,8 +38,14 @@
                             <th>#</th>
                             <th>REF NO</th>
                             <th>CAR NAME</th>
-                            <th>CAR MODEL</th>
+                            <th>COLOR</th>
+                            <th>MODEL</th>
                             <th>BRAND</th>
+                            <th>PRICE (LKR/HR)</th>
+                            <th>TRANSMISSION</th>
+                            <th>PLATE NO</th>
+                            <th>ENGINE NO</th>
+                            <th>CHASSIS NO</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -53,38 +59,5 @@
 @endsection
 
 @push('scripts')
-<script>
-$(document).ready(function() {
-    var table = $('#cars-table').DataTable({
-        processing: true,
-        serverSide: true,
-        ajax: {
-            url: "{{ route('car') }}",
-            data: function (d) {
-                d.brand_id = $('#brand-filter').val();
-            }
-        },
-        columns: [
-            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-            { data: 'ref_no', name: 'ref_no' },
-            { data: 'name', name: 'name' },
-            { data: 'model_name', name: 'model.name' },
-            { data: 'brand', name: 'model.brand.name' }
-        ],
-        pageLength: 10,
-        language: {
-            search: "Search:",
-            lengthMenu: "Show _MENU_ entries",
-            info: "Showing _START_ to _END_ of _TOTAL_ entries",
-            infoEmpty: "No entries found",
-            infoFiltered: "(filtered from _MAX_ total entries)",
-        }
-    });
-
-    // Reload table if brand filter changes
-    $('#brand-filter').on('change', function() {
-        table.ajax.reload();
-    });
-});
-</script>
+<script src="{{ asset('js/car-index.js') }}"></script>
 @endpush

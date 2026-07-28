@@ -26,7 +26,7 @@ class CarController extends Controller
                 $cars = $this->getCarsByBrand($request->brand_id);
             }
             
-          return DataTables::of($cars)
+            return DataTables::of($cars)
                 ->addIndexColumn()
                 ->addColumn('brand', function($car) {
                     return $car->model->brand->name ?? 'N/A';
@@ -34,15 +34,37 @@ class CarController extends Controller
                 ->addColumn('model_name', function($car) {
                     return $car->model->name ?? 'N/A';
                 })
+                ->addColumn('ref_no', function($car) {
+                    return $car->ref_no ?? 'N/A';
+                })
+                ->addColumn('name', function($car) {
+                    return $car->name ?? 'N/A';
+                })
+                ->addColumn('color', function($car) {
+                    $color = $car->color ?? 'N/A';
+                    if ($color !== 'N/A') {
+                        return '<span class="label" style="background-color: ' . strtolower($color) . '; color: #fff; padding: 4px 10px; border-radius: 4px;">' . $color . '</span>';
+                    }
+                    return $color;
+                })
                 ->addColumn('number_plate', function($car) {
                     return $car->number_plate ?? 'N/A';
                 })
-                ->addColumn('rent_price', function($car) {
-                    return $car->rent_price_per_hour ? '$' . number_format($car->rent_price_per_hour, 2) : 'N/A';
+                ->addColumn('rent_price_per_hour', function($car) {
+                    return $car->rent_price_per_hour ? 'Rs. ' . number_format($car->rent_price_per_hour, 2) : 'N/A';
                 })
+                ->addColumn('transmition', function($car) {
+                    return $car->transmition ?? 'N/A';
+                })
+                ->addColumn('engine_number', function($car) {
+                    return $car->engine_number ?? 'N/A';
+                })
+                ->addColumn('chassis_number', function($car) {
+                    return $car->chassis_number ?? 'N/A';
+                })
+                ->rawColumns(['color']) // Allow HTML in color column
                 ->make(true);
         }
-
 
         // Use trait method to get brands
         $brands = $this->getAllBrands();
@@ -67,7 +89,7 @@ class CarController extends Controller
     public function save(Request $request)
     {
         // Check permission using trait method
-       if (!$this->hasCarPermission()) {
+        if (!$this->hasCarPermission()) {
             return response()->json([
                 'success' => false,
                 'message' => 'You do not have permission to add cars.'
@@ -84,7 +106,6 @@ class CarController extends Controller
             ], 422);
         }
 
-
         // Prepare car data
         $carArray = [
             'model_id' => $validated['car_model'],
@@ -100,7 +121,7 @@ class CarController extends Controller
         // Save using trait method
         $result = $this->saveCar($carArray);
         
-       return response()->json([
+        return response()->json([
             'success' => true,
             'message' => $result['message'],
             'car' => $result['car']
@@ -108,29 +129,29 @@ class CarController extends Controller
     }
 
     // AJAX endpoint to check engine number
-public function checkEngineNumber(Request $request)
-{
-    $engineNumber = $request->get('value');
-    $exists = $this->engineNumberExists($engineNumber);
-    
-    return response()->json(['exists' => $exists]);
-}
+    public function checkEngineNumber(Request $request)
+    {
+        $engineNumber = $request->get('value');
+        $exists = $this->engineNumberExists($engineNumber);
+        
+        return response()->json(['exists' => $exists]);
+    }
 
-// AJAX endpoint to check chassis number
-public function checkChassis(Request $request)
-{
-    $chassisNumber = $request->get('value');
-    $exists = $this->chassisExists($chassisNumber);
-    
-    return response()->json(['exists' => $exists]);
-}
+    // AJAX endpoint to check chassis number
+    public function checkChassis(Request $request)
+    {
+        $chassisNumber = $request->get('value');
+        $exists = $this->chassisExists($chassisNumber);
+        
+        return response()->json(['exists' => $exists]);
+    }
 
-// AJAX endpoint to check number plate
-public function checkNumberPlate(Request $request)
-{
-    $numberPlate = $request->get('value');
-    $exists = $this->numberPlateExists($numberPlate);
-    
-    return response()->json(['exists' => $exists]);
-}
+    // AJAX endpoint to check number plate
+    public function checkNumberPlate(Request $request)
+    {
+        $numberPlate = $request->get('value');
+        $exists = $this->numberPlateExists($numberPlate);
+        
+        return response()->json(['exists' => $exists]);
+    }
 }
