@@ -18,8 +18,10 @@ class Car extends Model
         'name',
         'engine_number',
         'chassis_number',
+        'number_plate',
         'color',
         'transmition',
+        'rent_price_per_hour',
         'model_id'
     ];
 

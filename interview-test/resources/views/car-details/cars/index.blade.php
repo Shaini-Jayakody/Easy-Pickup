@@ -6,6 +6,13 @@
         <div class="panel panel-primary">
             <div class="panel-heading">
                 <h3 class="panel-title">Car List</h3>
+                @auth
+                    @if(in_array(Auth::user()->role, ['admin', 'manager']))
+                        <a href="{{ route('car.form') }}" class="btn btn-success btn-sm pull-right" style="margin-top: -5px;">
+                            + Add New Car
+                        </a>
+                    @endif
+                @endauth
             </div>
             <div class="panel-body">
                 <!-- Brand Filter Dropdown -->

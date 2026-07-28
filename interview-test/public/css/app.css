@@ -11,7 +11,7 @@ body {
     background: #ffffff;
 }
 
-/* ---------- Home Page (Full Width) ---------- */
+/* ---------- Home Page---------- */
 .home-wrapper {
     min-height: 100vh;
     display: flex;
@@ -457,37 +457,40 @@ body {
 /* ===== Password Wrapper ===== */
 .password-wrapper {
     position: relative;
+    width: 100%;
 }
 
 .password-wrapper .form-control {
-    padding-right: 45px;
+    padding-right: 45px !important;
+    width: 100%;
 }
 
 .eye-toggle {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
+    position: absolute !important;
+    right: 12px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    cursor: pointer !important;
     opacity: 0.7;
     transition: opacity 0.3s ease;
-    background: none;
-    border: none;
-    padding: 4px;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: none !important;
+    border: none !important;
+    padding: 4px !important;
+    line-height: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 10 !important;
 }
 
 .eye-toggle:hover {
     opacity: 1;
 }
 
-.eye-toggle svg,
 .eye-toggle img {
     width: 20px;
     height: 20px;
+    display: block;
 }
 
 /* ===== Password Strength ===== */
@@ -578,5 +581,43 @@ body {
         font-size: 18px;
         right: 10px;
     }
+}
+/* ===== Spinner ===== */
+.spinner-border {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    vertical-align: text-bottom;
+    border: 0.2em solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinner-border .75s linear infinite;
+}
+
+@keyframes spinner-border {
+    to { transform: rotate(360deg); }
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.2em;
+}
+
+/* ===== Alert fade ===== */
+.alert-dismissible .close {
+    position: relative;
+    top: -2px;
+    right: -21px;
+    color: inherit;
+}
+
+.fade {
+    opacity: 0;
+    transition: opacity .15s linear;
+}
+
+.fade.in {
+    opacity: 1;
 }
 }
