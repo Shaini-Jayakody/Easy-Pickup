@@ -19,7 +19,7 @@
                 <div class="row" style="margin-bottom: 15px;">
                     <div class="col-md-3">
                         <label for="brand-filter">Filter by Brand:</label>
-                        <select id="brand-filter" class="form-control">
+                        <select id="brand-filter" class="form-control" style="height: 40px;">
                             <option value="">All Brands</option>
                             @if(isset($brands) && $brands->count() > 0)
                                 @foreach($brands as $brand)
@@ -46,7 +46,11 @@
                             <th>PLATE NO</th>
                             <th>ENGINE NO</th>
                             <th>CHASSIS NO</th>
-                            <th>ACTION</th>
+                            @auth
+                                @if(in_array(Auth::user()->role, ['admin', 'manager']))
+                                    <th>ACTION</th>
+                                @endif
+                            @endauth
                         </tr>
                     </thead>
                     <tbody>
@@ -60,5 +64,9 @@
 @endsection
 
 @push('scripts')
+<!-- Pass isAdmin variable to JavaScript -->
+<script>
+    var isAdmin = {{ auth()->check() && in_array(auth()->user()->role ?? '', ['admin', 'manager']) ? 'true' : 'false' }};
+</script>
 <script src="{{ asset('js/car-index.js') }}"></script>
 @endpush

@@ -29,7 +29,10 @@ class CarController extends Controller
                 $cars = $this->getCarsByBrand($request->brand_id);
             }
             
-            return DataTables::of($cars)
+            // Check if user has permission to see action column
+            $hasPermission = Auth::check() && in_array(Auth::user()->role, ['admin', 'manager']);
+            
+            $dataTable = DataTables::of($cars)
                 ->addIndexColumn()
                 ->addColumn('brand', function($car) {
                     return $car->model->brand->name ?? 'N/A';
@@ -64,24 +67,32 @@ class CarController extends Controller
                 })
                 ->addColumn('chassis_number', function($car) {
                     return $car->chassis_number ?? 'N/A';
-                })
-               ->addColumn('action', function($car) {
- $editBtn = '<a href="' . route('car.edit', $car->id) . '" 
-                class="btn btn-primary btn-xs action-btn edit-btn" 
-                title="Edit Car">
-                ' . IconHelper::edit() . '
-            </a>';
-      $deleteBtn = '<button class="btn btn-danger btn-xs action-btn delete-car" 
-                    data-id="' . $car->id . '" 
-                    data-name="' . $car->name . '" 
-                    title="Delete Car">
-                    ' . IconHelper::delete() . '
-                </button>';
-    
-    return '<div class="action-buttons">' . $editBtn . ' ' . $deleteBtn . '</div>';
-})
-                ->rawColumns(['color', 'action'])
-                ->make(true);
+                });
+            
+            // ===== ONLY ADD ACTION COLUMN IF USER HAS PERMISSION =====
+            if ($hasPermission) {
+                $dataTable->addColumn('action', function($car) {
+                    $editBtn = '<a href="' . route('car.edit', $car->id) . '" 
+                                class="action-btn edit-btn" 
+                                title="Edit Car">
+                                ' . IconHelper::edit(14) . '
+                            </a>';
+                    
+                    $deleteBtn = '<button class="action-btn delete-car" 
+                                    data-id="' . $car->id . '" 
+                                    data-name="' . $car->name . '" 
+                                    title="Delete Car">
+                                    ' . IconHelper::delete(14) . '
+                                </button>';
+                    
+                    return '<div class="action-buttons">' . $editBtn . ' ' . $deleteBtn . '</div>';
+                });
+                $dataTable->rawColumns(['color', 'action']);
+            } else {
+                $dataTable->rawColumns(['color']);
+            }
+            
+            return $dataTable->make(true);
         }
 
         $brands = $this->getAllBrands();
@@ -164,7 +175,6 @@ class CarController extends Controller
         }
 
         try {
-            // Validate with exclude ID to ignore current record in uniqueness checks
             $validated = $this->validateCarData($request->all(), $id);
         } catch (ValidationException $e) {
             return response()->json([
@@ -183,36 +193,37 @@ class CarController extends Controller
         ]);
     }
 
-   /**
- * Delete a car
- */
-public function delete($id)
-{
-    try {
-        \Log::info('Delete car attempt', ['id' => $id, 'user' => Auth::id()]);
-        
-        if (!$this->hasCarPermission()) {
+    /**
+     * Delete a car
+     */
+    public function delete($id)
+    {
+        try {
+            \Log::info('Delete car attempt', ['id' => $id, 'user' => Auth::id()]);
+            
+            if (!$this->hasCarPermission()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to delete cars.'
+                ], 403);
+            }
+
+            $result = $this->deleteCar($id);
+            
+            return response()->json([
+                'success' => true,
+                'message' => $result['message']
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Delete car error: ' . $e->getMessage());
+            
             return response()->json([
                 'success' => false,
-                'message' => 'You do not have permission to delete cars.'
-            ], 403);
+                'message' => 'Error deleting car: ' . $e->getMessage()
+            ], 500);
         }
-
-        $result = $this->deleteCar($id);
-        
-        return response()->json([
-            'success' => true,
-            'message' => $result['message']
-        ]);
-    } catch (\Exception $e) {
-        \Log::error('Delete car error: ' . $e->getMessage());
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Error deleting car: ' . $e->getMessage()
-        ], 500);
     }
-}
+
     /**
      * Prepare car data array from validated data
      */
@@ -230,6 +241,7 @@ public function delete($id)
         ];
     }
 
+
     // AJAX ENDPOINTS FOR UNIQUENESS CHECKS
 
     /**
@@ -238,7 +250,7 @@ public function delete($id)
     public function checkEngineNumber(Request $request)
     {
         $engineNumber = $request->get('value');
-        $carId = $request->get('car_id'); // For edit mode, exclude current car
+        $carId = $request->get('car_id');
         $exists = $this->engineNumberExists($engineNumber, $carId);
         
         return response()->json(['exists' => $exists]);

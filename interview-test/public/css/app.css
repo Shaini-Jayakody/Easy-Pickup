@@ -9,6 +9,7 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     min-height: 100vh;
     background: #ffffff;
+    padding-top: 70px; /* Fixed navbar offset */
 }
 
 /* ---------- Home Page---------- */
@@ -54,8 +55,6 @@ body {
 .home-description strong {
     color: #2c3e50;
 }
-
-
 
 /* ---------- Welcome/Splash Screen ---------- */
 .splash-container {
@@ -241,7 +240,7 @@ body {
 }
 
 .btn-primary {
-     width: 100%;
+    width: 100%;
     padding: 12px 20px;
     background: #87CEEB;
     color: #fff;
@@ -255,7 +254,7 @@ body {
 }
 
 .btn-dark {
-     width: 100%;
+    width: 100%;
     padding: 12px 20px;
     background: #2c3e50;
     color: #fff;
@@ -381,6 +380,7 @@ body {
     .home-content {
         padding: 10px;
     }
+}
 
 /* ===== Registration Form Styles ===== */
 .form-group {
@@ -454,6 +454,7 @@ body {
 .id-format-hint.hint {
     color: #888 !important;
 }
+
 /* ===== Password Wrapper ===== */
 .password-wrapper {
     position: relative;
@@ -582,6 +583,7 @@ body {
         right: 10px;
     }
 }
+
 /* ===== Spinner ===== */
 .spinner-border {
     display: inline-block;
@@ -620,4 +622,312 @@ body {
 .fade.in {
     opacity: 1;
 }
+
+/*NAVBAR STYLES*/
+
+/* Navbar brand */
+.navbar-brand {
+    font-size: 20px;
+    font-weight: 700;
+    padding: 15px 15px;
+}
+
+.navbar-brand strong {
+    color: #2c3e50;
+}
+
+/* Profile section in navbar */
+.profile-icon {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #87CEEB;
+    color: #fff;
+    text-align: center;
+    line-height: 30px;
+    margin-right: 5px;
+}
+
+.profile-icon .glyphicon {
+    font-size: 16px;
+    top: 2px;
+}
+
+.user-name {
+    font-weight: 500;
+    margin-right: 5px;
+}
+
+.user-role {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+}
+
+/* Dropdown header */
+.dropdown-header {
+    padding: 10px 20px;
+    font-size: 13px;
+    color: #333;
+}
+
+.dropdown-header small {
+    display: block;
+    font-weight: normal;
+    font-size: 12px;
+    color: #888;
+}
+
+.dropdown-menu .glyphicon {
+    margin-right: 8px;
+}
+
+/* Active nav links */
+.navbar-nav > li.active > a {
+    background-color: #e7e7e7 !important;
+    color: #333 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .user-role {
+        display: none;
+    }
+    
+    .user-name {
+        font-size: 14px;
+    }
+}
+
+/* Navbar right alignment fix */
+.navbar-nav.navbar-right:last-child {
+    margin-right: 0;
+}
+
+/* Admin dropdown items */
+.dropdown-menu .divider {
+    margin: 5px 0;
+}
+
+/* SQUARE ACTION BUTTONS*/
+
+.action-buttons {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    align-items: center;
+}
+
+.action-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    text-decoration: none !important;
+    line-height: 1 !important;
+}
+
+/* Perfect Square (no rounded corners) */
+.action-btn-square {
+    border-radius: 0 !important;
+}
+
+/* Smaller Square Buttons */
+.action-btn-sm {
+    width: 26px !important;
+    height: 26px !important;
+}
+
+.action-btn-sm svg {
+    width: 13px !important;
+    height: 13px !important;
+}
+
+/* Larger Square Buttons */
+.action-btn-lg {
+    width: 38px !important;
+    height: 38px !important;
+}
+
+.action-btn-lg svg {
+    width: 18px !important;
+    height: 18px !important;
+}
+
+.action-btn svg {
+    width: 16px !important;
+    height: 16px !important;
+    stroke: currentColor !important;
+    fill: none !important;
+    stroke-width: 2 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+}
+
+/* ===== Edit Button ===== */
+.edit-btn {
+    background-color: #337ab7 !important;
+    color: #fff !important;
+}
+
+.edit-btn:hover {
+    background-color: #286090 !important;
+    color: #fff !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 2px 8px rgba(51, 122, 183, 0.3) !important;
+}
+
+.edit-btn:active {
+    transform: scale(0.95) !important;
+}
+
+/* ===== Delete Button ===== */
+.delete-car {
+    background-color: #d9534f !important;
+    color: #fff !important;
+}
+
+.delete-car:hover {
+    background-color: #c9302c !important;
+    color: #fff !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 2px 8px rgba(217, 83, 79, 0.3) !important;
+}
+
+.delete-car:active {
+    transform: scale(0.95) !important;
+}
+
+.delete-car:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* ===== Spinner ===== */
+.spinner-border-xs {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinner-border 0.75s linear infinite;
+}
+
+@keyframes spinner-border {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== DataTable Alignment ===== */
+.dataTable .text-center {
+    text-align: center !important;
+}
+
+    /* DATATABLE CUSTOM STYLES*/
+
+/* ===== DataTables Length Menu ===== */
+.dataTables_length {
+    margin-bottom: 10px !important;
+}
+
+.dataTables_length label {
+    font-weight: normal !important;
+    font-size: 14px !important;
+    color: #555 !important;
+}
+
+.dataTables_length select {
+    height: 40px !important;
+    padding: 6px 12px !important;
+    border-radius: 4px !important;
+    border: 1px solid #ccc !important;
+    background-color: #fff !important;
+    font-size: 14px !important;
+    line-height: 1.42857143 !important;
+    color: #555 !important;
+    margin: 0 5px !important;
+    cursor: pointer !important;
+    display: inline-block !important;
+    width: auto !important;
+}
+
+.dataTables_length select:focus {
+    border-color: #66afe9 !important;
+    outline: 0 !important;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, .6) !important;
+}
+
+/* ===== DataTables Filter (Search box) ===== */
+.dataTables_filter {
+    margin-bottom: 10px !important;
+}
+
+.dataTables_filter label {
+    font-weight: normal !important;
+    font-size: 14px !important;
+    color: #555 !important;
+}
+
+.dataTables_filter input {
+    height: 40px !important;
+    padding: 6px 12px !important;
+    border-radius: 4px !important;
+    border: 1px solid #ccc !important;
+    margin-left: 5px !important;
+    font-size: 14px !important;
+    background-color: #fff !important;
+    display: inline-block !important;
+    width: 200px !important;
+}
+
+.dataTables_filter input:focus {
+    border-color: #66afe9 !important;
+    outline: 0 !important;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, .6) !important;
+}
+
+
+/* RESPONSIVE TABLES */
+
+@media (max-width: 768px) {
+    .action-btn {
+        width: 28px !important;
+        height: 28px !important;
+    }
+   
+    .dataTables_wrapper .dataTables_length select {
+        width: auto !important;
+        min-width: 80px !important;
+    }
+    .action-btn svg {
+        width: 14px !important;
+        height: 14px !important;
+    }
+    
+    .action-buttons {
+        gap: 3px;
+    }
+}
+
+@media (max-width: 480px) {
+    .action-btn {
+        width: 24px !important;
+        height: 24px !important;
+    }
+    
+    .action-btn svg {
+        width: 12px !important;
+        height: 12px !important;
+    }
+
 }

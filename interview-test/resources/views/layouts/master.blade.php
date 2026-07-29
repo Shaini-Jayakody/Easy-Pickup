@@ -17,10 +17,14 @@
     <!-- DataTables CSS for Bootstrap 3 -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap.min.css">
     
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    
     @stack('styles')
 </head>
 <body>
     @include('layouts.navbar')
+    
     <div class="container">
         @yield('content')
     </div>

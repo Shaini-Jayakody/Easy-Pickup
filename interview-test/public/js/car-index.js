@@ -11,22 +11,14 @@ $(document).ready(function() {
         return $('meta[name="csrf-token"]').attr('content');
     }
 
-    // ===== Initialize DataTable =====
-    var table = $('#cars-table').DataTable({
-        processing: true,
-        serverSide: true,
-        ajax: {
-            url: "/car",
-            data: function (d) {
-                d.brand_id = $('#brand-filter').val();
-            },
-            error: function(xhr, error, thrown) {
-                console.log('DataTable error:', error);
-                console.log('Status:', xhr.status);
-                console.log('Response:', xhr.responseText);
-            }
-        },
-        columns: [
+    // ===== Check if user is admin/manager =====
+    function isAdminUser() {
+        return typeof isAdmin !== 'undefined' && isAdmin === true;
+    }
+
+    // ===== Get columns based on user role =====
+    function getColumns() {
+        var columns = [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
             { data: 'ref_no', name: 'ref_no' },
             { data: 'name', name: 'name' },
@@ -51,15 +43,40 @@ $(document).ready(function() {
             { data: 'transmition', name: 'transmition' },
             { data: 'number_plate', name: 'number_plate' },
             { data: 'engine_number', name: 'engine_number' },
-            { data: 'chassis_number', name: 'chassis_number' },
-            { 
+            { data: 'chassis_number', name: 'chassis_number' }
+        ];
+        
+        // Only add action column if user is admin/manager
+        if (isAdminUser()) {
+            columns.push({ 
                 data: 'action', 
                 name: 'action', 
                 orderable: false, 
                 searchable: false,
-                className: 'text-center'
+                className: 'text-center',
+                width: '80px'
+            });
+        }
+        
+        return columns;
+    }
+
+    // ===== Initialize DataTable =====
+    var table = $('#cars-table').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: "/car",
+            data: function (d) {
+                d.brand_id = $('#brand-filter').val();
+            },
+            error: function(xhr, error, thrown) {
+                console.log('DataTable error:', error);
+                console.log('Status:', xhr.status);
+                console.log('Response:', xhr.responseText);
             }
-        ],
+        },
+        columns: getColumns(),
         pageLength: 10,
         responsive: true,
         language: {
@@ -75,6 +92,7 @@ $(document).ready(function() {
     $('#brand-filter').on('change', function() {
         table.ajax.reload();
     });
+
 
     // DELETE FUNCTIONALITY
 
@@ -131,11 +149,11 @@ $(document).ready(function() {
     function deleteCar(carId, $button) {
         console.log('Deleting car ID:', carId);
         
-        // Save original text
-        var originalText = $button.text();
+        // Save original content
+        var originalHtml = $button.html();
         
         // Disable button and show loading state
-        $button.prop('disabled', true).html('<span class="spinner-border spinner-border-xs" role="status" aria-hidden="true"></span> Deleting...');
+        $button.prop('disabled', true).html('<span class="spinner-border spinner-border-xs" role="status" aria-hidden="true"></span>');
         
         var csrfToken = getCsrfToken();
         console.log('CSRF Token:', csrfToken);
@@ -152,7 +170,7 @@ $(document).ready(function() {
                 console.log('Delete success:', response);
                 
                 // Restore button
-                $button.prop('disabled', false).text(originalText || 'Delete');
+                $button.prop('disabled', false).html(originalHtml);
                 
                 if (response.success) {
                     var swal = getSwal();
@@ -166,7 +184,7 @@ $(document).ready(function() {
                             timerProgressBar: true
                         });
                     } else {
-                        alert( (response.message || 'Car deleted successfully.'));
+                        alert('✅ ' + (response.message || 'Car deleted successfully.'));
                     }
                     // Reload DataTable
                     table.ajax.reload();
@@ -181,7 +199,7 @@ $(document).ready(function() {
                             confirmButtonColor: '#dc3545'
                         });
                     } else {
-                        alert( message);
+                        alert('❌ ' + message);
                     }
                 }
             },
@@ -191,7 +209,7 @@ $(document).ready(function() {
                 console.error('Response:', xhr.responseText);
                 
                 // Restore button
-                $button.prop('disabled', false).text(originalText || 'Delete');
+                $button.prop('disabled', false).html(originalHtml);
                 
                 var message = 'An error occurred while deleting.';
                 
@@ -229,11 +247,12 @@ $(document).ready(function() {
                         confirmButtonColor: '#dc3545'
                     });
                 } else {
-                    alert(message);
+                    alert('❌ ' + message);
                 }
             }
         });
     }
 
     console.log('Car index initialized successfully!');
+    console.log('Is Admin User:', isAdminUser());
 });
