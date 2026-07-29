@@ -27,16 +27,22 @@
                         <span class="glyphicon glyphicon-list-alt"></span> Cars
                     </a>
                 </li>
-                <li class="{{ request()->routeIs('bookings*') ? 'active' : '' }}">
-                    <a href="#">
-                        <span class="glyphicon glyphicon-calendar"></span> Bookings
-                    </a>
-                </li>
-                <li class="{{ request()->routeIs('invoices*') ? 'active' : '' }}">
-                    <a href="#">
-                        <span class="glyphicon glyphicon-file"></span> Invoices
-                    </a>
-                </li>
+                
+                <!-- Only show for authenticated users -->
+                @auth
+                    <li class="{{ request()->routeIs('bookings*') ? 'active' : '' }}">
+                        <a href="#">
+                            <span class="glyphicon glyphicon-calendar"></span> Bookings
+                        </a>
+                    </li>
+                    <li class="{{ request()->routeIs('invoices*') ? 'active' : '' }}">
+                        <a href="#">
+                            <span class="glyphicon glyphicon-file"></span> Invoices
+                        </a>
+                    </li>
+                @endauth
+                
+                <!-- Admin Dropdown - Only for Admin/Manager -->
                 @auth
                     @if(in_array(Auth::user()->role, ['admin', 'manager']))
                         <li class="dropdown">
@@ -81,16 +87,7 @@
                                     <span class="glyphicon glyphicon-user"></span> My Profile
                                 </a>
                             </li>
-                            <li>
-                                <a href="#">
-                                    <span class="glyphicon glyphicon-calendar"></span> My Bookings
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#">
-                                    <span class="glyphicon glyphicon-file"></span> My Invoices
-                                </a>
-                            </li>
+                            <!-- REMOVED: My Bookings and My Invoices -->
                             <li role="separator" class="divider"></li>
                             <li>
                                 <a href="{{ route('logout') }}" 
