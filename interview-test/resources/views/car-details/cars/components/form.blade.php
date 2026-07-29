@@ -15,7 +15,7 @@
                 <div class="col-md-6">
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label for="car_brand" style="font-size: 13px; font-weight: 600;">Brand <span style="color:#dc3545;">*</span></label>
-                        <select class="form-control select2" name="car_brand" id="car_brand" style="width: 100%; height: 34px;">
+                        <select class="form-control select2" name="car_brand" id="car_brand" style="width: 100%; height: 34px;" required>
                             <option value="">Search Brand...</option>
                             @foreach($brands as $brand)
                                 <option value="{{$brand->id}}">{{$brand->name}}</option>
@@ -27,7 +27,7 @@
                 <div class="col-md-6">
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label for="car_model" style="font-size: 13px; font-weight: 600;">Model <span style="color:#dc3545;">*</span></label>
-                        <select class="form-control select2" name="car_model" id="car_model" style="width: 100%; height: 34px;">
+                        <select class="form-control select2" name="car_model" id="car_model" style="width: 100%; height: 34px;" required>
                             <option value="">Search Model...</option>
                             @foreach($models as $model)
                                 <option value="{{$model->id}}" data-brand="{{$model->brand_id}}">{{$model->name}}</option>
@@ -42,14 +42,14 @@
                 <div class="col-md-6">
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label for="car_name" style="font-size: 13px; font-weight: 600;">Car Name <span style="color:#dc3545;">*</span></label>
-                        <input type="text" class="form-control" name="car_name" id="car_name" placeholder="Car name" style="height: 34px; font-size: 13px;">
+                        <input type="text" class="form-control" name="car_name" id="car_name" placeholder="Car name" style="height: 34px; font-size: 13px;" required>
                         <span class="text-danger error-msg" id="car_name-error" style="font-size: 11px;"></span>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label for="car_color" style="font-size: 13px; font-weight: 600;">Color <span style="color:#dc3545;">*</span></label>
-                        <input type="text" class="form-control" name="car_color" id="car_color" placeholder="Color" style="height: 34px; font-size: 13px;">
+                        <input type="text" class="form-control" name="car_color" id="car_color" placeholder="Color" style="height: 34px; font-size: 13px;" required>
                         <span class="text-danger error-msg" id="car_color-error" style="font-size: 11px;"></span>
                     </div>
                 </div>
@@ -59,7 +59,7 @@
                 <div class="col-md-6">
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label for="number_plate" style="font-size: 13px; font-weight: 600;">Number Plate <span style="color:#dc3545;">*</span></label>
-                        <input type="text" class="form-control" name="number_plate" id="number_plate" placeholder="ABC-1234" style="height: 34px; font-size: 13px;">
+                        <input type="text" class="form-control" name="number_plate" id="number_plate" placeholder="ABC-1234" style="height: 34px; font-size: 13px;" required>
                         <span class="text-danger error-msg" id="number_plate-error" style="font-size: 11px;"></span>
                         <small style="font-size: 10px; color: #888;">Unique</small>
                     </div>
@@ -67,7 +67,7 @@
                 <div class="col-md-6">
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label for="rent_price_per_hour" style="font-size: 13px; font-weight: 600;">Rent Price/Hour (Rs.) <span style="color:#dc3545;">*</span></label>
-                        <input type="number" class="form-control" name="rent_price_per_hour" id="rent_price_per_hour" placeholder="2500" step="10" min="500" style="height: 34px; font-size: 13px;">
+                        <input type="number" class="form-control" name="rent_price_per_hour" id="rent_price_per_hour" placeholder="2500" step="10" min="500" style="height: 34px; font-size: 13px;" required>
                         <span class="text-danger error-msg" id="rent_price_per_hour-error" style="font-size: 11px;"></span>
                     </div>
                 </div>
@@ -77,7 +77,7 @@
                 <div class="col-md-6">
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label for="eng_number" style="font-size: 13px; font-weight: 600;">Engine Number <span style="color:#dc3545;">*</span></label>
-                        <input type="text" class="form-control" name="eng_number" id="eng_number" placeholder="Engine number" style="height: 34px; font-size: 13px;">
+                        <input type="text" class="form-control" name="eng_number" id="eng_number" placeholder="Engine number" style="height: 34px; font-size: 13px;" required>
                         <span class="text-danger error-msg" id="eng_number-error" style="font-size: 11px;"></span>
                         <small style="font-size: 10px; color: #888;">Unique</small>
                     </div>
@@ -85,7 +85,7 @@
                 <div class="col-md-6">
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label for="chas_number" style="font-size: 13px; font-weight: 600;">Chassis Number <span style="color:#dc3545;">*</span></label>
-                        <input type="text" class="form-control" name="chas_number" id="chas_number" placeholder="Chassis number" style="height: 34px; font-size: 13px;">
+                        <input type="text" class="form-control" name="chas_number" id="chas_number" placeholder="Chassis number" style="height: 34px; font-size: 13px;" required>
                         <span class="text-danger error-msg" id="chas_number-error" style="font-size: 11px;"></span>
                         <small style="font-size: 10px; color: #888;">Unique</small>
                     </div>
@@ -94,7 +94,7 @@
 
             <div class="form-group" style="margin-bottom: 12px;">
                 <label for="car_trans" style="font-size: 13px; font-weight: 600;">Transmission <span style="color:#dc3545;">*</span></label>
-                <select class="form-control" name="car_trans" id="car_trans" style="height: 34px; font-size: 13px;">
+                <select class="form-control" name="car_trans" id="car_trans" style="height: 34px; font-size: 13px;" required>
                     <option value="">Select Transmission</option>
                     <option value="Auto">Auto</option>
                     <option value="Manual">Manual</option>
@@ -105,7 +105,7 @@
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
                 <a href="{{ route('car') }}" class="btn btn-default btn-sm" style="padding: 6px 20px; font-size: 13px;">Cancel</a>
-                <button type="submit" class="btn btn-primary btn-sm" id="submit-btn" style="padding: 6px 20px; font-size: 13px;">
+                <button type="submit" class="btn btn-primary btn-sm" id="submit-btn" style="padding: 6px 20px; font-size: 13px;" disabled>
                     <span id="submit-text">Submit</span>
                     <span id="submit-spinner" style="display: none;">
                         <span class="spinner-border spinner-border-sm" role="status"></span> Saving...

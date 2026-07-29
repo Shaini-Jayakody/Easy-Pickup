@@ -43,6 +43,7 @@ $(document).ready(function() {
             
             $modelSelect.trigger('change');
             CarValidation.validate('car_brand');
+            updateSubmitButton();
         });
     }
 
@@ -56,6 +57,7 @@ $(document).ready(function() {
                 $(this).val(cleaned);
             }
             CarValidation.validate('car_color');
+            updateSubmitButton();
         });
 
         // Block number keys from being typed
@@ -86,6 +88,7 @@ $(document).ready(function() {
                 if (numValue >= 0) {
                     $(this).val(numValue.toFixed(2));
                     CarValidation.validate('rent_price_per_hour');
+                    updateSubmitButton();
                 }
             }
         });
@@ -101,6 +104,7 @@ $(document).ready(function() {
                 value = parts[0] + '.' + parts.slice(1).join('');
             }
             $(this).val(value);
+            updateSubmitButton();
         });
 
         // Prevent multiple decimal points
@@ -114,53 +118,136 @@ $(document).ready(function() {
         });
     }
 
+    // ===== Update Submit Button State =====
+    function updateSubmitButton() {
+        var $submitBtn = $('#submit-btn');
+        var hasErrors = false;
+        var errorMessages = [];
+        
+        // Check all fields for errors
+        $('.error-msg').each(function() {
+            var errorText = $(this).text().trim();
+            if ($(this).is(':visible') && errorText.length > 0) {
+                hasErrors = true;
+                errorMessages.push(errorText);
+                return false; // break the loop
+            }
+        });
+        
+        // Also check for invalid fields without error messages
+        if (!hasErrors) {
+            $('.is-invalid').each(function() {
+                var fieldId = $(this).attr('id');
+                var $error = $('#' + fieldId + '-error');
+                if ($error.length === 0 || $error.text().trim().length === 0) {
+                    hasErrors = true;
+                    errorMessages.push('Invalid field: ' + fieldId);
+                    return false;
+                }
+            });
+        }
+        
+        if (hasErrors) {
+            $submitBtn.prop('disabled', true);
+            $submitBtn.attr('title', 'Please fix all errors before submitting');
+            $submitBtn.css('opacity', '0.6');
+            $submitBtn.css('cursor', 'not-allowed');
+        } else {
+            // Check if all required fields have values
+            var allFilled = true;
+            var emptyFields = [];
+            
+            $('.form-control[required], .select2[required]').each(function() {
+                var $this = $(this);
+                var fieldName = $this.attr('name') || $this.attr('id');
+                var value = $this.val();
+                
+                if ($this.is('select') || $this.hasClass('select2')) {
+                    if (!value || value === '' || value === null) {
+                        allFilled = false;
+                        emptyFields.push(fieldName);
+                        return false;
+                    }
+                } else {
+                    if (!value || value.trim() === '') {
+                        allFilled = false;
+                        emptyFields.push(fieldName);
+                        return false;
+                    }
+                }
+            });
+            
+            if (allFilled) {
+                $submitBtn.prop('disabled', false);
+                $submitBtn.attr('title', '');
+                $submitBtn.css('opacity', '1');
+                $submitBtn.css('cursor', 'pointer');
+            } else {
+                $submitBtn.prop('disabled', true);
+                $submitBtn.attr('title', 'Please fill in all required fields');
+                $submitBtn.css('opacity', '0.6');
+                $submitBtn.css('cursor', 'not-allowed');
+            }
+        }
+    }
+
     // ===== Attach validation events =====
     function attachValidationEvents() {
         $('#car_brand').on('change', function() { 
-            CarValidation.validate('car_brand'); 
+            CarValidation.validate('car_brand');
+            updateSubmitButton();
         });
         
         $('#car_model').on('change', function() { 
-            CarValidation.validate('car_model'); 
+            CarValidation.validate('car_model');
+            updateSubmitButton();
         });
         
         $('#car_name').on('input', function() { 
-            CarValidation.validate('car_name'); 
+            CarValidation.validate('car_name');
+            updateSubmitButton();
         });
         
         // Color validation is handled by restrictColorInput()
         
         $('#number_plate').on('input', function() { 
             CarValidation.validate('number_plate');
+            updateSubmitButton();
         }).on('blur', function() {
             var value = $(this).val().trim();
             if (value.length > 0) {
                 CarValidation.checkNumberPlateUniqueness();
+                updateSubmitButton();
             }
         });
         
         $('#eng_number').on('input', function() { 
             CarValidation.validate('eng_number');
+            updateSubmitButton();
         }).on('blur', function() {
             var value = $(this).val().trim();
             if (value.length > 0) {
                 CarValidation.checkEngineUniqueness();
+                updateSubmitButton();
             }
         });
         
         $('#chas_number').on('input', function() { 
             CarValidation.validate('chas_number');
+            updateSubmitButton();
         }).on('blur', function() {
             var value = $(this).val().trim();
             if (value.length > 0) {
                 CarValidation.checkChassisUniqueness();
+                updateSubmitButton();
             }
         });
         
         // Price validation is handled by formatPrice()
         
         $('#car_trans').on('change', function() { 
-            CarValidation.validate('car_trans'); 
+            CarValidation.validate('car_trans');
+            updateSubmitButton();
         });
     }
 
@@ -278,6 +365,7 @@ $(document).ready(function() {
                     CarValidation.clearAll();
                     $('#car_brand').val(null).trigger('change');
                     $('#car_model').val(null).trigger('change');
+                    updateSubmitButton();
                 }
             },
             error: function(xhr) {
@@ -305,6 +393,7 @@ $(document).ready(function() {
                     // Show first error in popup
                     var firstError = typeof errors === 'string' ? errors : errors[Object.keys(errors)[0]][0];
                     showErrorPopup(firstError || 'Please fix the errors above.');
+                    updateSubmitButton();
                 } else if (xhr.status === 403) {
                     showErrorPopup(xhr.responseJSON ? xhr.responseJSON.message : 'You do not have permission.');
                 } else {
@@ -330,6 +419,7 @@ $(document).ready(function() {
             
             if (!isValid) {
                 CarValidation.focusFirstInvalid();
+                updateSubmitButton();
                 return;
             }
             
@@ -343,6 +433,7 @@ $(document).ready(function() {
             
             if (hasError) {
                 CarValidation.focusFirstInvalid();
+                updateSubmitButton();
                 return;
             }
             
@@ -368,6 +459,9 @@ $(document).ready(function() {
         formatPrice();         
         attachValidationEvents();
         handleFormSubmit();
+        
+        // Initial check for submit button state
+        updateSubmitButton();
         
         console.log('Car form initialized successfully!');
     }
