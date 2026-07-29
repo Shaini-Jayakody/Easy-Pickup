@@ -56,6 +56,10 @@
                         </div>
                     </div>
 
+                    <div id="calendar-container" class="small-calendar" style="margin-top: 15px;">
+                             <!-- Calendar will be rendered here by JavaScript -->
+                    </div>
+
                     <div class="form-group">
                         <label for="rental_start_date">Rental Start Date & Time <span style="color:#dc3545;">*</span></label>
                         <input type="datetime-local" class="form-control" name="rental_start_date" id="rental_start_date" required>
