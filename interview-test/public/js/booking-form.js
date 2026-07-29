@@ -1,6 +1,5 @@
 /**
- * Booking Form Script
- * Handles car selection, date validation, availability checking, and form submission
+ * Booking Form Script - Enhanced with Calendar Integration
  */
 
 $(document).ready(function() {
@@ -11,7 +10,30 @@ $(document).ready(function() {
         return $('meta[name="csrf-token"]').attr('content');
     }
 
-    // ===== Calculate Duration =====
+    // ===== Update Car Details Display =====
+    function updateCarDetails() {
+        const $select = $('#car_id');
+        const selectedOption = $select.find('option:selected');
+        
+        if (selectedOption.val()) {
+            const name = selectedOption.data('name') || selectedOption.text().split(' - ')[0];
+            const plate = selectedOption.data('plate') || '';
+            const ref = selectedOption.data('ref') || '';
+            const price = selectedOption.data('price') || 0;
+            
+            $('#display-car-name').text(name);
+            $('#display-car-plate').text(plate);
+            $('#display-car-ref').text(ref);
+            $('#display-car-price').text('Rs. ' + parseFloat(price).toFixed(2));
+            $('#car-details').fadeIn(300);
+        } else {
+            $('#car-details').fadeOut(300);
+        }
+        
+        updateCostEstimate();
+    }
+
+    // ===== Calculate Duration and Cost =====
     function calculateDuration() {
         var start = $('#rental_start_date').val();
         var end = $('#rental_end_date').val();
@@ -24,15 +46,41 @@ $(document).ready(function() {
                 var diffMs = endDate - startDate;
                 var diffHours = Math.round(diffMs / (1000 * 60 * 60));
                 $('#duration-text').text(diffHours + ' hours');
-                $('#duration-display').show();
+                $('#duration-display').fadeIn(300);
+                updateCostEstimate();
                 return true;
             } else {
-                $('#duration-display').hide();
+                $('#duration-display').fadeOut(300);
                 return false;
             }
         }
-        $('#duration-display').hide();
+        $('#duration-display').fadeOut(300);
         return false;
+    }
+
+    // ===== Update Cost Estimate =====
+    function updateCostEstimate() {
+        const start = $('#rental_start_date').val();
+        const end = $('#rental_end_date').val();
+        const pricePerHour = parseFloat($('#car_id option:selected').data('price') || 0);
+        
+        if (start && end && pricePerHour > 0) {
+            const startDate = new Date(start);
+            const endDate = new Date(end);
+            
+            if (endDate > startDate) {
+                const diffMs = endDate - startDate;
+                const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+                const totalCost = diffHours * pricePerHour;
+                $('#cost-text').text('Rs. ' + totalCost.toFixed(2));
+                $('#duration-display').fadeIn(300);
+                return;
+            }
+        }
+        
+        if (pricePerHour > 0) {
+            $('#cost-text').text('Rs. 0.00');
+        }
     }
 
     // ===== Check Car Availability =====
@@ -41,7 +89,12 @@ $(document).ready(function() {
         var start = $('#rental_start_date').val();
         var end = $('#rental_end_date').val();
         
+        var $status = $('#availability-status');
+        
         if (carId && start && end) {
+            $status.show().removeClass('alert-success alert-danger alert-warning').addClass('alert-info');
+            $status.html('<span class="spinner-border spinner-border-sm" role="status"></span> Checking availability...');
+            
             $.ajax({
                 url: '/bookings/check-availability',
                 type: 'GET',
@@ -52,19 +105,23 @@ $(document).ready(function() {
                 },
                 success: function(response) {
                     if (response.available) {
-                        $('#availability-status').html('<span style="color:green;">✅ Car is available for selected dates</span>');
+                        $status.removeClass('alert-info alert-danger').addClass('alert-success');
+                        $status.html('✅ Car is available for selected dates');
                         $('#car_id').removeClass('is-invalid').addClass('is-valid');
-                        updateSubmitButton();
                     } else {
-                        $('#availability-status').html('<span style="color:red;">❌ Car is NOT available for selected dates</span>');
+                        $status.removeClass('alert-info alert-success').addClass('alert-danger');
+                        $status.html('❌ Car is NOT available for selected dates');
                         $('#car_id').removeClass('is-valid').addClass('is-invalid');
-                        updateSubmitButton();
                     }
+                    updateSubmitButton();
                 },
                 error: function() {
-                    $('#availability-status').html('<span style="color:orange;">⚠️ Unable to check availability</span>');
+                    $status.removeClass('alert-info alert-success').addClass('alert-warning');
+                    $status.html('⚠️ Unable to check availability');
                 }
             });
+        } else {
+            $status.hide();
         }
     }
 
@@ -84,13 +141,22 @@ $(document).ready(function() {
             }
         });
         
-        // Check if car is available (green text means available)
-        var availabilityText = $('#availability-status').text();
-        if (availabilityText.includes('NOT available')) {
+        // Check availability status
+        var statusText = $('#availability-status').text();
+        if (statusText.includes('NOT available') || statusText.includes('Unable to check')) {
             hasError = true;
         }
         
-        if (carId && start && end && !hasError && !availabilityText.includes('NOT available')) {
+        // Check if date range is valid
+        if (start && end) {
+            var startDate = new Date(start);
+            var endDate = new Date(end);
+            if (endDate <= startDate) {
+                hasError = true;
+            }
+        }
+        
+        if (carId && start && end && !hasError && !statusText.includes('NOT available')) {
             $submitBtn.prop('disabled', false);
             $submitBtn.css('opacity', '1');
             $submitBtn.css('cursor', 'pointer');
@@ -101,14 +167,22 @@ $(document).ready(function() {
         }
     }
 
-    // ===== Trigger availability check =====
+    // ===== Event Handlers =====
     $('#car_id').on('change', function() {
+        updateCarDetails();
         checkAvailability();
         updateSubmitButton();
+        
+        // Update calendar
+        const carId = $(this).val();
+        if (window.bookingCalendar) {
+            window.bookingCalendar.setCarId(carId);
+        }
     });
 
-    // Pre-select the car when the form is opened from the car listing page
+    // Pre-select the car when the form is opened
     if ($('#car_id').val()) {
+        updateCarDetails();
         checkAvailability();
         updateSubmitButton();
     }
@@ -117,6 +191,7 @@ $(document).ready(function() {
         calculateDuration();
         checkAvailability();
         updateSubmitButton();
+        updateCostEstimate();
     });
 
     // ===== Set minimum date to now =====
@@ -136,6 +211,7 @@ $(document).ready(function() {
         calculateDuration();
         checkAvailability();
         updateSubmitButton();
+        updateCostEstimate();
     });
 
     // ===== Form Submit =====
@@ -169,9 +245,10 @@ $(document).ready(function() {
                     if (isSwalAvailable() && swal) {
                         swal.fire({
                             icon: 'success',
-                            title: 'Success!',
+                            title: '🎉 Success!',
                             text: response.message,
-                            confirmButtonText: 'OK'
+                            confirmButtonText: 'OK',
+                            confirmButtonColor: '#3b82f6'
                         }).then(function() {
                             window.location.href = "/bookings";
                         });
@@ -196,7 +273,7 @@ $(document).ready(function() {
                             icon: 'error',
                             title: 'Validation Error',
                             text: errorMsg,
-                            confirmButtonColor: '#dc3545'
+                            confirmButtonColor: '#ef4444'
                         });
                     } else {
                         alert('❌ ' + errorMsg);
@@ -213,7 +290,7 @@ $(document).ready(function() {
                             icon: 'error',
                             title: 'Error!',
                             text: message,
-                            confirmButtonColor: '#dc3545'
+                            confirmButtonColor: '#ef4444'
                         });
                     } else {
                         alert('❌ ' + message);

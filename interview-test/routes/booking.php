@@ -45,4 +45,6 @@ Route::middleware(['auth'])->group(function () {
     // ============================================
     Route::get('/bookings/check-availability', [BookingController::class, 'checkAvailability'])
         ->name('bookings.check-availability');
+
+    Route::get('/bookings/get-car-bookings', [BookingController::class, 'getCarBookings'])->name('bookings.calendar');
 });

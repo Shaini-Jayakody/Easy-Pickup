@@ -148,17 +148,63 @@ class BookingController extends Controller
     }
 
     /**
-     * Check car availability
-     */
-    public function checkAvailability(Request $request)
-    {
-        $available = $this->isCarAvailable(
-            $request->car_id,
-            $request->start_date,
-            $request->end_date
-        );
-
+ * Check car availability
+ */
+public function checkAvailability(Request $request)
+{
+    try {
+        $carId = $request->car_id;
+        $startDate = $request->start_date;
+        $endDate = $request->end_date;
+        
+        // Validate input
+        if (!$carId || !$startDate || !$endDate) {
+            return response()->json([
+                'available' => false,
+                'message' => 'Missing required parameters'
+            ], 400);
+        }
+        
+        $available = $this->isCarAvailable($carId, $startDate, $endDate);
+        
         return response()->json(['available' => $available]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'available' => false,
+            'message' => $e->getMessage()
+        ], 500);
+    }
+}
+
+    /**
+     * Get car bookings for calendar
+     */
+    public function getCarBookings(Request $request)
+    {
+        $carId = $request->car_id;
+        
+        if (!$carId) {
+            return response()->json(['bookings' => []]);
+        }
+        
+        $bookings = Booking::where('car_id', $carId)
+            ->whereIn('status', ['pending', 'confirmed', 'active'])
+            ->select('booking_id', 'rental_start_date', 'rental_end_date', 'status')
+            ->get()
+            ->map(function($booking) {
+                return [
+                    'id' => $booking->booking_id,
+                    'rental_start_date' => $booking->rental_start_date,
+                    'rental_end_date' => $booking->rental_end_date,
+                    'status' => $booking->status,
+                    'status_label' => $this->getStatusText($booking->status)
+                ];
+            });
+        
+        return response()->json([
+            'bookings' => $bookings
+        ]);
     }
 
     /**
