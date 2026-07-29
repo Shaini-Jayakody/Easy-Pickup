@@ -56,5 +56,10 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['check.role:admin,manager'])->group(function () {
         Route::put('/bookings/{id}/status', [BookingController::class, 'updateStatus'])
             ->name('bookings.update-status');
+
+             Route::put('/bookings/{id}/status-dropdown', [BookingController::class, 'updateStatusFromDropdown'])
+            ->name('bookings.update-status-dropdown');
     });
+
+    
 });

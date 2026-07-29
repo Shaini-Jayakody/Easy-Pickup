@@ -1515,3 +1515,65 @@ select.form-control {
         float: none !important;
     }
 }
+
+/* ============================================
+   STATUS DROPDOWN STYLES
+   ============================================ */
+
+.status-dropdown-wrapper {
+    display: inline-block;
+    position: relative;
+}
+
+.status-dropdown {
+    height: 32px !important;
+    padding: 2px 20px 2px 8px !important;
+    font-size: 12px !important;
+    border-radius: 4px !important;
+    min-width: 110px !important;
+    appearance: auto !important;
+    border: 1px solid #ccc !important;
+    background-color: #fff !important;
+    cursor: pointer !important;
+}
+
+.status-dropdown:focus {
+    border-color: #66afe9 !important;
+    outline: 0 !important;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, .6) !important;
+}
+
+.status-dropdown option:disabled {
+    color: #666;
+    font-weight: bold;
+}
+
+.status-dropdown option {
+    padding: 4px 8px;
+}
+
+/* Status colors in dropdown */
+.status-dropdown option[value="pending"] { color: #f0ad4e; }
+.status-dropdown option[value="confirmed"] { color: #5bc0de; }
+.status-dropdown option[value="active"] { color: #5cb85c; }
+.status-dropdown option[value="returned"] { color: #337ab7; }
+.status-dropdown option[value="completed"] { color: #2e6da4; }
+.status-dropdown option[value="cancelled"] { color: #d9534f; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .status-dropdown {
+        min-width: 90px !important;
+        font-size: 11px !important;
+        height: 28px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .status-dropdown {
+        min-width: 80px !important;
+        font-size: 10px !important;
+        height: 24px !important;
+        padding: 1px 16px 1px 4px !important;
+    }
+}
