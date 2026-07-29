@@ -4,6 +4,13 @@
  */
 
 $(document).ready(function() {
+    console.log('Car index script loaded!');
+
+    // ===== Get CSRF Token =====
+    function getCsrfToken() {
+        return $('meta[name="csrf-token"]').attr('content');
+    }
+
     // ===== Initialize DataTable =====
     var table = $('#cars-table').DataTable({
         processing: true,
@@ -12,6 +19,11 @@ $(document).ready(function() {
             url: "/car",
             data: function (d) {
                 d.brand_id = $('#brand-filter').val();
+            },
+            error: function(xhr, error, thrown) {
+                console.log('DataTable error:', error);
+                console.log('Status:', xhr.status);
+                console.log('Response:', xhr.responseText);
             }
         },
         columns: [
@@ -44,7 +56,8 @@ $(document).ready(function() {
                 data: 'action', 
                 name: 'action', 
                 orderable: false, 
-                searchable: false 
+                searchable: false,
+                className: 'text-center'
             }
         ],
         pageLength: 10,
@@ -62,7 +75,6 @@ $(document).ready(function() {
     $('#brand-filter').on('change', function() {
         table.ajax.reload();
     });
-
 
     // DELETE FUNCTIONALITY
 
@@ -82,11 +94,16 @@ $(document).ready(function() {
     }
 
     // ===== Delete Car Handler =====
-    $(document).on('click', '.delete-car', function() {
+    $(document).on('click', '.delete-car', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
         var carId = $(this).data('id');
         var carName = $(this).data('name') || 'this car';
         var $button = $(this);
         var swal = getSwal();
+        
+        console.log('Delete button clicked - ID:', carId, 'Name:', carName);
         
         if (isSwalAvailable() && swal) {
             swal.fire({
@@ -112,42 +129,95 @@ $(document).ready(function() {
 
     // ===== Delete Car AJAX Request =====
     function deleteCar(carId, $button) {
-        // Disable button and show loading state
+        console.log('Deleting car ID:', carId);
+        
+        // Save original text
         var originalText = $button.text();
+        
+        // Disable button and show loading state
         $button.prop('disabled', true).html('<span class="spinner-border spinner-border-xs" role="status" aria-hidden="true"></span> Deleting...');
+        
+        var csrfToken = getCsrfToken();
+        console.log('CSRF Token:', csrfToken);
         
         $.ajax({
             url: '/car/' + carId + '/delete',
-            type: 'DELETE',
+            type: 'POST',
             data: {
-                _token: $('meta[name="csrf-token"]').attr('content')
+                _token: csrfToken,
+                _method: 'DELETE'
             },
+            dataType: 'json',
             success: function(response) {
+                console.log('Delete success:', response);
+                
+                // Restore button
+                $button.prop('disabled', false).text(originalText || 'Delete');
+                
                 if (response.success) {
                     var swal = getSwal();
                     if (isSwalAvailable() && swal) {
                         swal.fire({
                             icon: 'success',
                             title: 'Deleted!',
-                            text: response.message,
+                            text: response.message || 'Car deleted successfully.',
                             timer: 2000,
                             showConfirmButton: false,
                             timerProgressBar: true
                         });
                     } else {
-                        alert('✅ ' + response.message);
+                        alert( (response.message || 'Car deleted successfully.'));
                     }
                     // Reload DataTable
                     table.ajax.reload();
+                } else {
+                    var swal = getSwal();
+                    var message = response.message || 'Failed to delete car.';
+                    if (isSwalAvailable() && swal) {
+                        swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: message,
+                            confirmButtonColor: '#dc3545'
+                        });
+                    } else {
+                        alert( message);
+                    }
                 }
             },
             error: function(xhr) {
+                console.error('Delete error:', xhr);
+                console.error('Status:', xhr.status);
+                console.error('Response:', xhr.responseText);
+                
                 // Restore button
                 $button.prop('disabled', false).text(originalText || 'Delete');
                 
                 var message = 'An error occurred while deleting.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    message = xhr.responseJSON.message;
+                
+                // Try to get error message from response
+                try {
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        message = xhr.responseJSON.message;
+                    } else if (xhr.responseText) {
+                        var response = JSON.parse(xhr.responseText);
+                        if (response.message) {
+                            message = response.message;
+                        }
+                    }
+                } catch (e) {
+                    console.log('Could not parse error response');
+                }
+                
+                // Check for specific error codes
+                if (xhr.status === 403) {
+                    message = 'You do not have permission to delete this car.';
+                } else if (xhr.status === 404) {
+                    message = 'Car not found.';
+                } else if (xhr.status === 500) {
+                    message = 'Server error. Please try again later.';
+                } else if (xhr.status === 419) {
+                    message = 'Session expired. Please refresh the page and try again.';
                 }
                 
                 var swal = getSwal();
@@ -159,7 +229,7 @@ $(document).ready(function() {
                         confirmButtonColor: '#dc3545'
                     });
                 } else {
-                    alert('❌ ' + message);
+                    alert(message);
                 }
             }
         });

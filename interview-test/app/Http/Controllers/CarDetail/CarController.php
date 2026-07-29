@@ -71,7 +71,7 @@ class CarController extends Controller
                 title="Edit Car">
                 ' . IconHelper::edit() . '
             </a>';
-    $deleteBtn = '<button class="btn btn-danger btn-xs action-btn delete-btn" 
+      $deleteBtn = '<button class="btn btn-danger btn-xs action-btn delete-car" 
                     data-id="' . $car->id . '" 
                     data-name="' . $car->name . '" 
                     title="Delete Car">
@@ -183,11 +183,14 @@ class CarController extends Controller
         ]);
     }
 
-    /**
-     * Delete a car
-     */
-    public function delete($id)
-    {
+   /**
+ * Delete a car
+ */
+public function delete($id)
+{
+    try {
+        \Log::info('Delete car attempt', ['id' => $id, 'user' => Auth::id()]);
+        
         if (!$this->hasCarPermission()) {
             return response()->json([
                 'success' => false,
@@ -201,8 +204,15 @@ class CarController extends Controller
             'success' => true,
             'message' => $result['message']
         ]);
+    } catch (\Exception $e) {
+        \Log::error('Delete car error: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error deleting car: ' . $e->getMessage()
+        ], 500);
     }
-
+}
     /**
      * Prepare car data array from validated data
      */
