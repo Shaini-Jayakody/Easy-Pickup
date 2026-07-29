@@ -1159,3 +1159,359 @@ select.form-control {
     .calendar-cell.day-cell.booked .booked-badge { font-size: 5px; padding: 0px 3px; min-width: 10px; top: -3px; right: -3px; }
     .calendar-cell.day-cell.booked .booked-icon { font-size: 5px; }
 }
+
+/* ============================================
+   SQUARE ACTION BUTTONS
+   ============================================ */
+
+.action-buttons {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Square button base */
+.action-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    text-decoration: none !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
+}
+
+.action-btn .glyphicon {
+    font-size: 14px !important;
+    top: 0 !important;
+}
+
+/* Edit button */
+.btn-edit {
+    background-color: #f0ad4e !important;
+    color: #fff !important;
+}
+
+.btn-edit:hover:not(:disabled) {
+    background-color: #ec971f !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 2px 8px rgba(240, 173, 78, 0.4) !important;
+}
+
+/* Cancel button */
+.btn-cancel {
+    background-color: #d9534f !important;
+    color: #fff !important;
+}
+
+.btn-cancel:hover:not(:disabled) {
+    background-color: #c9302c !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 2px 8px rgba(217, 83, 79, 0.4) !important;
+}
+
+/* View button */
+.btn-info {
+    background-color: #5bc0de !important;
+    color: #fff !important;
+}
+
+.btn-info:hover {
+    background-color: #31b0d5 !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 2px 8px rgba(91, 192, 222, 0.4) !important;
+}
+
+/* Success (Confirm/Complete) */
+.btn-success {
+    background-color: #5cb85c !important;
+    color: #fff !important;
+}
+
+.btn-success:hover:not(:disabled) {
+    background-color: #449d44 !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 2px 8px rgba(92, 184, 92, 0.4) !important;
+}
+
+/* Primary (Issue) */
+.btn-primary {
+    background-color: #337ab7 !important;
+    color: #fff !important;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #286090 !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 2px 8px rgba(51, 122, 183, 0.4) !important;
+}
+
+/* Warning (Return) */
+.btn-warning {
+    background-color: #f0ad4e !important;
+    color: #fff !important;
+}
+
+.btn-warning:hover:not(:disabled) {
+    background-color: #ec971f !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 2px 8px rgba(240, 173, 78, 0.4) !important;
+}
+
+/* Danger (Cancel) */
+.btn-danger {
+    background-color: #d9534f !important;
+    color: #fff !important;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background-color: #c9302c !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 2px 8px rgba(217, 83, 79, 0.4) !important;
+}
+
+/* Disabled state */
+.action-btn:disabled {
+    opacity: 0.4 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Hover tooltip for disabled buttons */
+.action-btn:disabled:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 10px;
+    white-space: nowrap;
+    z-index: 1000;
+}
+
+/* ============================================
+   STATUS BADGES
+   ============================================ */
+
+.label-status {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-block;
+    min-width: 70px;
+    text-align: center;
+}
+
+.label-pending {
+    background-color: #f0ad4e;
+    color: #fff;
+}
+
+.label-confirmed {
+    background-color: #5bc0de;
+    color: #fff;
+}
+
+.label-active {
+    background-color: #5cb85c;
+    color: #fff;
+}
+
+.label-returned {
+    background-color: #337ab7;
+    color: #fff;
+}
+
+.label-completed {
+    background-color: #2e6da4;
+    color: #fff;
+}
+
+.label-cancelled {
+    background-color: #d9534f;
+    color: #fff;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+    .action-btn {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 12px !important;
+    }
+    
+    .action-btn .glyphicon {
+        font-size: 12px !important;
+    }
+    
+    .label-status {
+        font-size: 10px;
+        min-width: 60px;
+        padding: 3px 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .action-btn {
+        width: 24px !important;
+        height: 24px !important;
+        font-size: 10px !important;
+    }
+    
+    .action-btn .glyphicon {
+        font-size: 10px !important;
+    }
+}
+
+/* ============================================
+   BOOKING FORM STYLES
+   ============================================ */
+
+/* Panel heading */
+.panel-primary .panel-heading {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+}
+
+.panel-primary {
+    border-color: #3b82f6;
+}
+
+/* Primary button */
+.btn-primary {
+    background-color: #3b82f6;
+    border-color: #2563eb;
+}
+
+.btn-primary:hover {
+    background-color: #2563eb;
+    border-color: #1d4ed8;
+}
+
+.btn-primary:disabled {
+    background-color: #93c5fd;
+    border-color: #60a5fa;
+    opacity: 0.7;
+}
+
+/* Required field asterisk */
+.text-danger {
+    color: #dc3545;
+}
+
+/* Availability status alerts */
+#availability-status.alert-success {
+    background-color: #d1fae5;
+    border-color: #10b981;
+    color: #065f46;
+}
+
+#availability-status.alert-danger {
+    background-color: #fee2e2;
+    border-color: #ef4444;
+    color: #991b1b;
+}
+
+#availability-status.alert-warning {
+    background-color: #fef3c7;
+    border-color: #f59e0b;
+    color: #92400e;
+}
+
+#availability-status.alert-info {
+    background-color: #dbeafe;
+    border-color: #3b82f6;
+    color: #1e40af;
+}
+
+/* Car details box */
+.car-details-box {
+    padding: 12px;
+    border-radius: 8px;
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #337ab7;
+}
+
+/* Duration and cost text */
+.duration-text {
+    font-size: 18px;
+    font-weight: 600;
+    color: #3b82f6;
+}
+
+.cost-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: #10b981;
+}
+
+/* Form actions */
+.form-actions {
+    margin-top: 20px;
+}
+
+/* Calendar wrapper */
+.calendar-wrapper {
+    margin-top: 15px;
+}
+
+/* Error messages */
+.error-msg {
+    color: #dc3545 !important;
+    font-size: 12px;
+    margin-top: 4px;
+    display: none;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+    .duration-text,
+    .cost-text {
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .duration-text,
+    .cost-text {
+        font-size: 13px;
+    }
+    
+    .car-details-box {
+        padding: 8px;
+    }
+    
+    .form-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+    }
+    
+    .form-actions .pull-right {
+        float: none !important;
+    }
+}

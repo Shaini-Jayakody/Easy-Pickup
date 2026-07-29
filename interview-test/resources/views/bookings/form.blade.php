@@ -2,24 +2,32 @@
 
 @section('content')
 @php
-    $selectedCarId = request('car_id');
-    $selectedUserId = request('user_id', Auth::id());
+    // Check if we're editing or creating
+    $isEdit = isset($booking);
+    $selectedCarId = $isEdit ? $booking->car_id : request('car_id');
+    $selectedUserId = $isEdit ? $booking->user_id : request('user_id', Auth::id());
+    $pageTitle = $isEdit ? 'Edit Booking #' . $booking->booking_ref_no : 'New Booking';
+    $buttonText = $isEdit ? 'Update Booking' : 'Create Booking';
 @endphp
+
 <div class="row">
     <div class="col-md-8 col-md-offset-2">
         <div class="panel panel-primary">
             <div class="panel-heading">
-                <h3 class="panel-title">New Booking</h3>
+                <h3 class="panel-title">{{ $pageTitle }}</h3>
             </div>
             <div class="panel-body">
                 <div id="alert-container"></div>
 
                 <form id="booking-form">
                     @csrf
+                    @if($isEdit)
+                        @method('PUT')
+                    @endif
 
-                    <!-- Car Selection with Details -->
+                    <!-- Car Selection -->
                     <div class="form-group">
-                        <label for="car_id">Select Car <span style="color:#dc3545;">*</span></label>
+                        <label for="car_id">Select Car <span class="text-danger">*</span></label>
                         <select class="form-control" name="car_id" id="car_id" required>
                             <option value="">-- Select Car --</option>
                             @foreach($cars as $car)
@@ -37,7 +45,7 @@
                     </div>
 
                     <!-- Car Details Display -->
-                    <div id="car-details" class="well well-sm" style="display:none; background-color: #f9f9f9; border-left: 4px solid #337ab7;">
+                    <div id="car-details" class="well well-sm car-details-box" style="display:{{ $selectedCarId ? 'block' : 'none' }};">
                         <div class="row">
                             <div class="col-md-4">
                                 <strong>Car:</strong> <span id="display-car-name">-</span>
@@ -56,19 +64,22 @@
                         </div>
                     </div>
 
-                    <div id="calendar-container" class="small-calendar" style="margin-top: 15px;">
-                             <!-- Calendar will be rendered here by JavaScript -->
+                    <!-- Calendar -->
+                    <div id="calendar-container" class="calendar-wrapper">
+                        <!-- Calendar will be rendered here -->
                     </div>
 
                     <div class="form-group">
-                        <label for="rental_start_date">Rental Start Date & Time <span style="color:#dc3545;">*</span></label>
-                        <input type="datetime-local" class="form-control" name="rental_start_date" id="rental_start_date" required>
+                        <label for="rental_start_date">Rental Start Date & Time <span class="text-danger">*</span></label>
+                        <input type="datetime-local" class="form-control" name="rental_start_date" id="rental_start_date" 
+                               value="{{ $isEdit && $booking->rental_start_date ? $booking->rental_start_date->format('Y-m-d\TH:i') : '' }}" required>
                         <span class="text-danger error-msg" id="rental_start_date-error"></span>
                     </div>
 
                     <div class="form-group">
-                        <label for="rental_end_date">Rental End Date & Time <span style="color:#dc3545;">*</span></label>
-                        <input type="datetime-local" class="form-control" name="rental_end_date" id="rental_end_date" required>
+                        <label for="rental_end_date">Rental End Date & Time <span class="text-danger">*</span></label>
+                        <input type="datetime-local" class="form-control" name="rental_end_date" id="rental_end_date" 
+                               value="{{ $isEdit && $booking->rental_end_date ? $booking->rental_end_date->format('Y-m-d\TH:i') : '' }}" required>
                         <span class="text-danger error-msg" id="rental_end_date-error"></span>
                     </div>
 
@@ -76,33 +87,37 @@
                     <div id="availability-status" class="alert" style="display:none;"></div>
 
                     <!-- Duration Display -->
-                    <div class="form-group" id="duration-display" style="display:none;">
+                    <div class="form-group" id="duration-display" style="display:{{ $isEdit ? 'block' : 'none' }};">
                         <div class="row">
                             <div class="col-md-6">
                                 <label>Duration</label>
-                                <p class="form-control-static" id="duration-text">0 hours</p>
+                                <p class="form-control-static duration-text" id="duration-text">{{ $isEdit ? $booking->getDurationInHours() : 0 }} hours</p>
                             </div>
                             <div class="col-md-6">
                                 <label>Estimated Cost</label>
-                                <p class="form-control-static" id="cost-text">Rs. 0.00</p>
+                                <p class="form-control-static cost-text" id="cost-text">Rs. {{ $isEdit ? number_format($booking->getDurationInHours() * ($booking->car->rent_price_per_hour ?? 0), 2) : '0.00' }}</p>
                             </div>
                         </div>
                     </div>
 
                     <input type="hidden" name="user_id" id="user_id" value="{{ $selectedUserId }}">
+                    @if($isEdit)
+                        <input type="hidden" name="booking_id" id="booking_id" value="{{ $booking->booking_id }}">
+                    @endif
 
                     <div class="form-group">
                         <label for="notes">Notes</label>
-                        <textarea class="form-control" name="notes" id="notes" rows="3" placeholder="Any special requests or notes..."></textarea>
+                        <textarea class="form-control" name="notes" id="notes" rows="3" placeholder="Any special requests or notes...">{{ $isEdit ? $booking->notes : '' }}</textarea>
                         <span class="text-danger error-msg" id="notes-error"></span>
                     </div>
 
-                    <div class="form-group" style="margin-top: 20px;">
+                    <div class="form-group form-actions">
                         <a href="{{ route('bookings.index') }}" class="btn btn-default">Cancel</a>
-                        <button type="submit" class="btn btn-primary pull-right" id="submit-btn" disabled>
-                            <span id="submit-text">Create Booking</span>
+                        <button type="submit" class="btn btn-primary pull-right" id="submit-btn" {{ $isEdit ? '' : 'disabled' }}>
+                            <span id="submit-text">{{ $buttonText }}</span>
                             <span id="submit-spinner" style="display: none;">
-                                <span class="spinner-border spinner-border-sm" role="status"></span> Creating...
+                                <span class="spinner-border spinner-border-sm" role="status"></span> 
+                                {{ $isEdit ? 'Updating...' : 'Creating...' }}
                             </span>
                         </button>
                     </div>
@@ -114,6 +129,11 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('js/booking-form.js') }}"></script>
+<script>
+    // Pass data to JavaScript
+    window.isEditMode = {{ isset($booking) ? 'true' : 'false' }};
+    window.bookingId = {{ isset($booking) ? $booking->booking_id : 'null' }};
+</script>
 <script src="{{ asset('js/booking-calendar.js') }}"></script>
+<script src="{{ asset('js/booking-form.js') }}"></script>
 @endpush

@@ -132,6 +132,37 @@ trait BookingTrait
     }
 
     /**
+     * Cancel a booking (only if pending and before start date)
+     */
+    public function cancelBooking($id): array
+    {
+        $booking = $this->getBookingById($id);
+        
+        // Check if booking can be cancelled
+        if (!$booking->isPending()) {
+            throw new \Exception('Only pending bookings can be cancelled.');
+        }
+
+        // Check if start date is in the future
+        $now = Carbon::now();
+        $startDate = Carbon::parse($booking->rental_start_date);
+        
+        if ($startDate->lessThanOrEqualTo($now)) {
+            throw new \Exception('Cannot cancel a booking that has already started.');
+        }
+
+        // Update status to cancelled
+        $booking->status = 'cancelled';
+        $booking->save();
+
+        return [
+            'success' => true,
+            'message' => 'Booking cancelled successfully!',
+            'booking' => $booking
+        ];
+    }
+
+    /**
      * Check if car is available for the given dates
      */
     public function validateCarAvailability($carId, $startDate, $endDate): void
@@ -153,9 +184,31 @@ trait BookingTrait
     }
 
     /**
+     * Check if car is available for update (excluding current booking)
+     */
+    public function validateCarAvailabilityForUpdate($bookingId, $carId, $startDate, $endDate): void
+    {
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+
+        $exists = Booking::where('car_id', $carId)
+            ->where('booking_id', '!=', $bookingId)
+            ->whereIn('status', ['pending', 'confirmed', 'active'])
+            ->where(function($query) use ($start, $end) {
+                $query->where('rental_start_date', '<', $end)
+                      ->where('rental_end_date', '>', $start);
+            })
+            ->exists();
+
+        if ($exists) {
+            throw new \Exception('This car is not available for the selected dates.');
+        }
+    }
+
+    /**
      * Check if car is available (for AJAX)
      */
-    public function isCarAvailable($carId, $startDate, $endDate): bool
+    public function isCarAvailable($carId, $startDate, $endDate, $excludeBookingId = null): bool
     {
         if (!$carId || !$startDate || !$endDate) {
             return false;
@@ -168,15 +221,18 @@ trait BookingTrait
             return false;
         }
 
-        $exists = Booking::where('car_id', $carId)
+        $query = Booking::where('car_id', $carId)
             ->whereIn('status', ['pending', 'confirmed', 'active'])
-            ->where(function($query) use ($start, $end) {
-                $query->where('rental_start_date', '<', $end)
-                      ->where('rental_end_date', '>', $start);
-            })
-            ->exists();
+            ->where(function($q) use ($start, $end) {
+                $q->where('rental_start_date', '<', $end)
+                  ->where('rental_end_date', '>', $start);
+            });
 
-        return !$exists;
+        if ($excludeBookingId) {
+            $query->where('booking_id', '!=', $excludeBookingId);
+        }
+
+        return !$query->exists();
     }
 
     /**
@@ -253,12 +309,70 @@ trait BookingTrait
             'notes.max' => 'Notes cannot exceed 500 characters.',
         ];
 
+        // For updates, we need different validation rules
+        if ($excludeId) {
+            $rules['rental_start_date'] = ['required', 'date'];
+            $rules['rental_end_date'] = ['required', 'date', 'after:rental_start_date'];
+        }
+
         $validator = Validator::make($data, $rules, $messages);
 
         if ($validator->fails()) {
             throw new ValidationException($validator);
         }
 
+        $this->validateRentalDuration($data['rental_start_date'], $data['rental_end_date']);
+
+        return $validator->validated();
+    }
+
+    /**
+     * Validate booking update (with additional restrictions)
+     */
+    public function validateBookingUpdate(array $data, $bookingId)
+    {
+        $booking = $this->getBookingById($bookingId);
+        
+        // Only pending bookings can be updated
+        if (!$booking->isPending()) {
+            throw new \Exception('Only pending bookings can be updated.');
+        }
+
+        // Check if start date is already passed
+        $currentStartDate = Carbon::parse($booking->rental_start_date);
+        $now = Carbon::now();
+        
+        if ($currentStartDate->lessThanOrEqualTo($now)) {
+            throw new \Exception('Cannot update a booking that has already started or is in the past.');
+        }
+
+        // Validate the data
+        $rules = [
+            'car_id' => ['required', 'exists:tbl_cars,id'],
+            'rental_start_date' => ['required', 'date', 'after:now'],
+            'rental_end_date' => ['required', 'date', 'after:rental_start_date'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ];
+
+        $messages = [
+            'car_id.required' => 'Please select a car.',
+            'car_id.exists' => 'Selected car does not exist.',
+            'rental_start_date.required' => 'Please select rental start date.',
+            'rental_start_date.date' => 'Please enter a valid date.',
+            'rental_start_date.after' => 'Rental must start in the future.',
+            'rental_end_date.required' => 'Please select rental end date.',
+            'rental_end_date.date' => 'Please enter a valid date.',
+            'rental_end_date.after' => 'Rental end must be after start date.',
+            'notes.max' => 'Notes cannot exceed 500 characters.',
+        ];
+
+        $validator = Validator::make($data, $rules, $messages);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        // Check duration
         $this->validateRentalDuration($data['rental_start_date'], $data['rental_end_date']);
 
         return $validator->validated();
@@ -286,12 +400,6 @@ trait BookingTrait
         if ($end->lessThanOrEqualTo($start)) {
             $this->throwValidationException([
                 'rental_end_date' => ['Rental end date must be after rental start date.'],
-            ]);
-        }
-
-        if ($start->lt(Carbon::now())) {
-            $this->throwValidationException([
-                'rental_start_date' => ['Rental must start in the future.'],
             ]);
         }
 
@@ -442,5 +550,72 @@ trait BookingTrait
             'notes' => $booking->notes,
             'created_at' => $booking->created_at,
         ];
+    }
+
+    /**
+     * Check if user can edit the booking
+     */
+    public function canEditBooking($booking): bool
+    {
+        if (!$booking) return false;
+        
+        // Only pending bookings can be edited
+        if (!$booking->isPending()) return false;
+        
+        // User must own the booking
+        if (!Auth::check()) return false;
+
+        $authenticatedUserId = (int) Auth::id();
+        $bookingOwnerId = (int) $booking->user_id;
+        if ($authenticatedUserId !== $bookingOwnerId) return false;
+
+        // Check if start date is in the future
+        $now = Carbon::now();
+        $startDate = Carbon::parse($booking->rental_start_date);
+        if ($startDate->lessThanOrEqualTo($now)) {
+            return false;
+        }
+        
+        return true;
+    }
+
+   /**
+ * Check if user can cancel the booking
+ */
+public function canCancelBooking($booking): bool
+{
+    if (!$booking) return false;
+    
+    // Only pending bookings can be cancelled
+    if (!$booking->isPending()) return false;
+    
+    // User must be logged in
+    if (!Auth::check()) return false;
+
+    // Check if start date is in the future
+    $now = Carbon::now();
+    $startDate = Carbon::parse($booking->rental_start_date);
+    if ($startDate->lessThanOrEqualTo($now)) {
+        return false;
+    }
+    
+    return true;
+}
+      
+
+    /**
+     * Get the edit route for a booking
+     */
+    public function getEditRoute($booking): string
+    {
+        return route('bookings.edit', $booking->booking_id);
+    }
+
+    /**
+     * Get the cancel route for a booking
+     */
+    public function getCancelRoute($booking): string
+    {
+        return route('bookings.cancel', $booking->booking_id);
     }
 }

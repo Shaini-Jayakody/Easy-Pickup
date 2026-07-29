@@ -16,13 +16,13 @@ $(document).ready(function() {
         ajax: {
             url: "/bookings",
             data: function (d) {
-                // Add filters if needed
                 d.status = $('#status-filter').val();
             },
             error: function(xhr, error, thrown) {
                 console.log('DataTable error:', error);
                 console.log('Status:', xhr.status);
                 console.log('Response:', xhr.responseText);
+                $('#bookings-table tbody').html('<tr><td colspan="11" class="text-center text-danger">Error loading data. Please refresh the page.</td></tr>');
             }
         },
         columns: [
@@ -32,18 +32,60 @@ $(document).ready(function() {
             { data: 'user_nic', name: 'user.id_num' },
             { data: 'car_name', name: 'car.name' },
             { data: 'car_plate', name: 'car.number_plate' },
-            { data: 'duration', name: 'duration', orderable: false, searchable: false },
-            { data: 'status', name: 'status', orderable: false, searchable: false },
-            { data: 'action', name: 'action', orderable: false, searchable: false }
+            { 
+                data: 'rental_start_date', 
+                name: 'rental_start_date',
+                render: function(data) {
+                    if (!data) return 'N/A';
+                    var date = new Date(data);
+                    return '<span class="date-display">' + date.toLocaleDateString() + '<br><small>' + date.toLocaleTimeString() + '</small></span>';
+                }
+            },
+            { 
+                data: 'rental_end_date', 
+                name: 'rental_end_date',
+                render: function(data) {
+                    if (!data) return 'N/A';
+                    var date = new Date(data);
+                    return '<span class="date-display">' + date.toLocaleDateString() + '<br><small>' + date.toLocaleTimeString() + '</small></span>';
+                }
+            },
+            { 
+                data: 'duration', 
+                name: 'duration', 
+                orderable: false, 
+                searchable: false,
+                render: function(data) {
+                    return data + ' hrs';
+                }
+            },
+            { 
+                data: 'status', 
+                name: 'status', 
+                orderable: false, 
+                searchable: false,
+            },
+            { 
+                data: 'action', 
+                name: 'action', 
+                orderable: false, 
+                searchable: false,
+                className: 'text-center',
+                render: function(data, type, row) {
+                    return data;
+                }
+            }
         ],
         pageLength: 10,
         responsive: true,
+        order: [[6, 'desc']], // Sort by start date descending
         language: {
             search: "Search:",
             lengthMenu: "Show _MENU_ entries",
             info: "Showing _START_ to _END_ of _TOTAL_ entries",
             infoEmpty: "No entries found",
             infoFiltered: "(filtered from _MAX_ total entries)",
+            zeroRecords: "No matching bookings found"
         }
     });
 
@@ -52,14 +94,23 @@ $(document).ready(function() {
         table.ajax.reload();
     });
 
+    // ===== Clear filters =====
+    $(document).on('click', '#clear-filters', function() {
+        $('#status-filter').val('').trigger('change');
+        table.ajax.reload();
+    });
+
     // ============================================
     // BOOKING DETAILS MODAL
     // ============================================
 
-    // ===== View Booking =====
     $(document).on('click', '.view-booking', function(e) {
         e.preventDefault();
         var id = $(this).data('id');
+        
+        // Show loading state
+        $('#booking-details').html('<div class="text-center"><span class="spinner-border" role="status"></span> Loading...</div>');
+        $('#bookingModal').modal('show');
         
         $.ajax({
             url: '/bookings/' + id,
@@ -69,57 +120,191 @@ $(document).ready(function() {
                 var html = `
                     <div class="row">
                         <div class="col-md-6">
-                            <h4>Customer Details</h4>
+                            <h4><span class="glyphicon glyphicon-user"></span> Customer Details</h4>
                             <p><strong>Name:</strong> ${booking.user?.name || 'N/A'}</p>
                             <p><strong>NIC:</strong> ${booking.user?.id_num || booking.user?.nic || 'N/A'}</p>
                             <p><strong>Email:</strong> ${booking.user?.email || 'N/A'}</p>
                         </div>
                         <div class="col-md-6">
-                            <h4>Car Details</h4>
+                            <h4><span class="glyphicon glyphicon-car"></span> Car Details</h4>
                             <p><strong>Car:</strong> ${booking.car?.name || 'N/A'}</p>
                             <p><strong>Plate No:</strong> ${booking.car?.number_plate || booking.car?.plate_no || 'N/A'}</p>
                             <p><strong>Ref No:</strong> ${booking.car?.ref_no || 'N/A'}</p>
+                            <p><strong>Price/Hour:</strong> ${booking.car?.price_per_hour ? 'Rs. ' + booking.car.price_per_hour : 'N/A'}</p>
                         </div>
                     </div>
+                    <hr>
                     <div class="row">
-                        <div class="col-md-6">
-                            <h4>Rental Period</h4>
-                            <p><strong>Start:</strong> ${new Date(booking.rental_start_date || booking.rental_start).toLocaleString()}</p>
-                            <p><strong>End:</strong> ${new Date(booking.rental_end_date || booking.rental_end).toLocaleString()}</p>
+                        <div class="col-md-4">
+                            <h4><span class="glyphicon glyphicon-calendar"></span> Rental Period</h4>
+                            <p><strong>Start:</strong> ${booking.rental_start_date ? new Date(booking.rental_start_date).toLocaleString() : 'N/A'}</p>
+                            <p><strong>End:</strong> ${booking.rental_end_date ? new Date(booking.rental_end_date).toLocaleString() : 'N/A'}</p>
                             <p><strong>Duration:</strong> ${(booking.duration_in_hours || booking.duration || 0)} hours</p>
                         </div>
-                        <div class="col-md-6">
-                            <h4>Status</h4>
-                            <p><span class="${booking.status_badge}">${booking.status_text}</span></p>
+                        <div class="col-md-4">
+                            <h4><span class="glyphicon glyphicon-info-sign"></span> Status</h4>
+                            <p><span class="label-status label-${booking.status}">${booking.status_text}</span></p>
                             <p><strong>Booking Ref:</strong> ${booking.booking_ref_no || booking.ref_no || 'N/A'}</p>
-                            ${booking.notes ? `<p><strong>Notes:</strong> ${booking.notes}</p>` : ''}
+                            <p><strong>Created:</strong> ${booking.created_at ? new Date(booking.created_at).toLocaleString() : 'N/A'}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h4><span class="glyphicon glyphicon-pencil"></span> Notes</h4>
+                            <p>${booking.notes || '<em>No notes</em>'}</p>
                         </div>
                     </div>
                 `;
                 $('#booking-details').html(html);
-                $('#bookingModal').modal('show');
             },
             error: function(xhr) {
-                alert('Error loading booking details.');
+                $('#booking-details').html('<div class="alert alert-danger">Error loading booking details. Please try again.</div>');
                 console.error(xhr);
             }
         });
     });
 
+   
     // ============================================
-    // BOOKING STATUS MANAGEMENT
+    // CANCEL BOOKING (User)
     // ============================================
 
-    // ===== Update Status Function =====
-    function updateStatus(id, action, actionLabel) {
-        if (!confirm('Are you sure you want to ' + actionLabel + ' this booking?')) {
+    var cancelBookingId = null;
+    var cancelRefNo = null;
+
+    // ===== Click handler for cancel button =====
+    $(document).on('click', '.cancel-booking', function(e) {
+        e.preventDefault();
+        
+        var id = $(this).data('id');
+        var refNo = $(this).data('ref') || 'this booking';
+        
+        console.log('Cancel button clicked for booking:', id, refNo);
+        
+        // Store booking details for modal
+        cancelBookingId = id;
+        cancelRefNo = refNo;
+        
+        // Update modal
+        $('#cancel-ref-no').text(refNo);
+        $('#cancel-error').hide();
+        $('#cancel-text').show();
+        $('#cancel-spinner').hide();
+        $('#confirm-cancel-btn').prop('disabled', false);
+        
+        // Show modal
+        $('#cancelModal').modal('show');
+    });
+
+    // ===== Confirm cancel button =====
+    $(document).on('click', '#confirm-cancel-btn', function() {
+        if (!cancelBookingId) {
+            console.error('No booking ID to cancel');
             return;
         }
+        
+        var $btn = $(this);
+        var id = cancelBookingId;
+        
+        console.log('Confirming cancellation for booking:', id);
+        
+        // Show loading state
+        $('#cancel-text').hide();
+        $('#cancel-spinner').show();
+        $btn.prop('disabled', true);
+        $('#cancel-error').hide();
+        
+        $.ajax({
+            url: '/bookings/' + id + '/cancel',
+            type: 'POST',
+            data: {
+                _token: getCsrfToken()
+            },
+            success: function(response) {
+                console.log('Cancel response:', response);
+                
+                if (response.success) {
+                    $('#cancelModal').modal('hide');
+                    
+                    var swal = getSwal();
+                    if (isSwalAvailable() && swal) {
+                        swal.fire({
+                            icon: 'success',
+                            title: 'Cancelled!',
+                            text: response.message,
+                            timer: 2000,
+                            showConfirmButton: false,
+                            timerProgressBar: true
+                        });
+                    } else {
+                        alert('✅ ' + response.message);
+                    }
+                    
+                    // Reload DataTable
+                    table.ajax.reload();
+                } else {
+                    $('#cancel-error').text(response.message || 'Error cancelling booking.').show();
+                    $('#cancel-text').show();
+                    $('#cancel-spinner').hide();
+                    $btn.prop('disabled', false);
+                }
+            },
+            error: function(xhr) {
+                console.error('Cancel error:', xhr);
+                
+                var message = 'Error cancelling booking.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    message = xhr.responseJSON.message;
+                }
+                $('#cancel-error').text(message).show();
+                $('#cancel-text').show();
+                $('#cancel-spinner').hide();
+                $btn.prop('disabled', false);
+            }
+        });
+    });
 
+    // ===== Reset cancel modal when closed =====
+    $(document).on('hidden.bs.modal', '#cancelModal', function() {
+        cancelBookingId = null;
+        cancelRefNo = null;
+        $('#cancel-text').show();
+        $('#cancel-spinner').hide();
+        $('#confirm-cancel-btn').prop('disabled', false);
+        $('#cancel-error').hide();
+    });
+
+    
+    // ============================================
+    // BOOKING STATUS MANAGEMENT (Admin)
+    // ============================================
+
+    function updateStatus(id, action, actionLabel) {
+        var swal = getSwal();
+        if (isSwalAvailable() && swal) {
+            swal.fire({
+                title: 'Confirm Action',
+                text: 'Are you sure you want to ' + actionLabel + ' this booking?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#5cb85c',
+                cancelButtonColor: '#d9534f',
+                confirmButtonText: 'Yes, ' + actionLabel + ' it!',
+                cancelButtonText: 'Cancel'
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    performStatusUpdate(id, action, actionLabel);
+                }
+            });
+        } else {
+            if (confirm('Are you sure you want to ' + actionLabel + ' this booking?')) {
+                performStatusUpdate(id, action, actionLabel);
+            }
+        }
+    }
+
+    function performStatusUpdate(id, action, actionLabel) {
         var $button = $('.' + action + '-booking[data-id="' + id + '"]');
         var originalHtml = $button.html();
         
-        // Show loading state
         $button.prop('disabled', true).html('<span class="spinner-border spinner-border-xs"></span>');
 
         $.ajax({
@@ -131,7 +316,6 @@ $(document).ready(function() {
             },
             success: function(response) {
                 if (response.success) {
-                    // Show success message
                     var swal = getSwal();
                     if (isSwalAvailable() && swal) {
                         swal.fire({
@@ -145,10 +329,10 @@ $(document).ready(function() {
                     } else {
                         alert('✅ ' + response.message);
                     }
-                    // Reload DataTable
                     table.ajax.reload();
                 } else {
                     alert('❌ ' + (response.message || 'Error updating status.'));
+                    $button.prop('disabled', false).html(originalHtml);
                 }
             },
             error: function(xhr) {
@@ -157,47 +341,35 @@ $(document).ready(function() {
                     message = xhr.responseJSON.message;
                 }
                 alert('❌ ' + message);
-                // Restore button
                 $button.prop('disabled', false).html(originalHtml);
             }
         });
     }
 
-    // ===== Confirm Booking =====
     $(document).on('click', '.confirm-booking', function() {
         var id = $(this).data('id');
         updateStatus(id, 'confirm', 'confirm');
     });
 
-    // ===== Issue Car =====
     $(document).on('click', '.issue-booking', function() {
         var id = $(this).data('id');
         updateStatus(id, 'issue', 'issue the car for');
     });
 
-    // ===== Return Car =====
     $(document).on('click', '.return-booking', function() {
         var id = $(this).data('id');
         updateStatus(id, 'return', 'return');
     });
 
-    // ===== Complete Booking =====
     $(document).on('click', '.complete-booking', function() {
         var id = $(this).data('id');
         updateStatus(id, 'complete', 'complete');
-    });
-
-    // ===== Cancel Booking =====
-    $(document).on('click', '.cancel-booking', function() {
-        var id = $(this).data('id');
-        updateStatus(id, 'cancel', 'cancel');
     });
 
     // ============================================
     // HELPER FUNCTIONS
     // ============================================
 
-    // ===== Get SweetAlert instance =====
     function getSwal() {
         if (typeof Swal !== 'undefined') {
             return Swal;

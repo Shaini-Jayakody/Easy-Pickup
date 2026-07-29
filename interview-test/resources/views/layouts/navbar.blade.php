@@ -31,7 +31,7 @@
                 <!-- Only show for authenticated users -->
                 @auth
                     <li class="{{ request()->routeIs('bookings*') ? 'active' : '' }}">
-                        <a href="#">
+                        <a href="/bookings">
                             <span class="glyphicon glyphicon-calendar"></span> Bookings
                         </a>
                     </li>
@@ -87,7 +87,6 @@
                                     <span class="glyphicon glyphicon-user"></span> My Profile
                                 </a>
                             </li>
-                            <!-- REMOVED: My Bookings and My Invoices -->
                             <li role="separator" class="divider"></li>
                             <li>
                                 <a href="{{ route('logout') }}" 

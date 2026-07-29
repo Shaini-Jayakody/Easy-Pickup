@@ -1,9 +1,16 @@
 /**
- * Booking Form Script - Enhanced with Calendar Integration
+ * Booking Form Script - Supports Create & Edit
  */
 
 $(document).ready(function() {
     console.log('Booking form script loaded!');
+
+    // ===== Get Edit Mode Status =====
+    var isEditMode = window.isEditMode || false;
+    var bookingId = window.bookingId || null;
+
+    console.log('Edit Mode:', isEditMode);
+    console.log('Booking ID:', bookingId);
 
     // ===== Get CSRF Token =====
     function getCsrfToken() {
@@ -83,6 +90,7 @@ $(document).ready(function() {
         }
     }
 
+    // ===== Validate Date Selection =====
     function validateDateSelection() {
         var carId = $('#car_id').val();
         var start = $('#rental_start_date').val();
@@ -137,14 +145,21 @@ $(document).ready(function() {
             $status.show().removeClass('alert-success alert-danger alert-warning').addClass('alert-info');
             $status.html('<span class="spinner-border spinner-border-sm" role="status"></span> Checking availability...');
             
+            // Build data with booking_id for edit mode
+            var data = {
+                car_id: carId,
+                start_date: start,
+                end_date: end
+            };
+            
+            if (isEditMode && bookingId) {
+                data.booking_id = bookingId;
+            }
+            
             $.ajax({
                 url: '/bookings/check-availability',
                 type: 'GET',
-                data: {
-                    car_id: carId,
-                    start_date: start,
-                    end_date: end
-                },
+                data: data,
                 success: function(response) {
                     if (response && typeof response.available !== 'undefined') {
                         if (response.available) {
@@ -158,12 +173,12 @@ $(document).ready(function() {
                         }
                     } else {
                         $status.removeClass('alert-info alert-success').addClass('alert-warning');
-                        $status.html('⚠️ Availability check could not be confirmed. You can still continue, but please verify before booking.');
+                        $status.html('⚠️ Availability check could not be confirmed.');
                     }
                     updateSubmitButton();
                 },
                 error: function(xhr) {
-                    var message = '⚠️ Availability check could not be confirmed. You can still continue, but please verify before booking.';
+                    var message = '⚠️ Availability check could not be confirmed.';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         message = '⚠️ ' + xhr.responseJSON.message;
                     }
@@ -208,7 +223,10 @@ $(document).ready(function() {
             }
         }
 
-        if (statusText.includes('must be at least 2 hours') || statusText.includes('cannot exceed 1 month') || statusText.includes('must start in the future') || statusText.includes('must be after the start date')) {
+        if (statusText.includes('must be at least 2 hours') || 
+            statusText.includes('cannot exceed 1 month') || 
+            statusText.includes('must start in the future') || 
+            statusText.includes('must be after the start date')) {
             hasError = true;
         }
         
@@ -239,7 +257,9 @@ $(document).ready(function() {
     // Pre-select the car when the form is opened
     if ($('#car_id').val()) {
         updateCarDetails();
-        checkAvailability();
+        setTimeout(function() {
+            checkAvailability();
+        }, 500);
         updateSubmitButton();
     }
 
@@ -270,7 +290,7 @@ $(document).ready(function() {
         updateCostEstimate();
     });
 
-    // ===== Form Submit =====
+    // ===== Form Submit - Supports Create & Edit =====
     $('#booking-form').on('submit', function(e) {
         e.preventDefault();
         
@@ -287,8 +307,21 @@ $(document).ready(function() {
             _token: getCsrfToken()
         };
         
+        var url, method;
+        if (isEditMode && bookingId) {
+            url = '/bookings/' + bookingId + '/update';
+            method = 'PUT';
+            formData._method = 'PUT';
+        } else {
+            url = '/bookings/store';
+            method = 'POST';
+        }
+        
+        console.log('Submitting to:', url);
+        console.log('Form Data:', formData);
+        
         $.ajax({
-            url: "/bookings/store",
+            url: url,
             type: "POST",
             data: formData,
             dataType: "json",
@@ -302,7 +335,7 @@ $(document).ready(function() {
                     if (isSwalAvailable() && swal) {
                         swal.fire({
                             icon: 'success',
-                            title: 'Success!',
+                            title: isEditMode ? 'Updated!' : 'Success!',
                             text: response.message,
                             confirmButtonText: 'OK',
                             confirmButtonColor: '#3b82f6'
@@ -334,6 +367,18 @@ $(document).ready(function() {
                         });
                     } else {
                         alert('❌ ' + errorMsg);
+                    }
+                } else if (xhr.status === 403) {
+                    var swal = getSwal();
+                    if (isSwalAvailable() && swal) {
+                        swal.fire({
+                            icon: 'error',
+                            title: 'Permission Denied',
+                            text: xhr.responseJSON?.message || 'You cannot perform this action.',
+                            confirmButtonColor: '#ef4444'
+                        });
+                    } else {
+                        alert('❌ ' + (xhr.responseJSON?.message || 'Permission denied.'));
                     }
                 } else {
                     var message = 'An error occurred. Please try again.';
@@ -373,4 +418,6 @@ $(document).ready(function() {
     }
 
     console.log('Booking form initialized successfully!');
+    console.log('Edit Mode:', isEditMode);
+    console.log('Booking ID:', bookingId);
 });

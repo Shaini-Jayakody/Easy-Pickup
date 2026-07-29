@@ -43,37 +43,37 @@ class Booking extends Model
     // Helper methods
     public function isPending()
     {
-        return $this->status === 'pending';
+        return strtolower((string) $this->status) === 'pending';
     }
 
     public function isConfirmed()
     {
-        return $this->status === 'confirmed';
+        return strtolower((string) $this->status) === 'confirmed';
     }
 
     public function isActive()
     {
-        return $this->status === 'active';
+        return strtolower((string) $this->status) === 'active';
     }
 
     public function isReturned()
     {
-        return $this->status === 'returned';
+        return strtolower((string) $this->status) === 'returned';
     }
 
     public function isCompleted()
     {
-        return $this->status === 'completed';
+        return strtolower((string) $this->status) === 'completed';
     }
 
     public function isCancelled()
     {
-        return $this->status === 'cancelled';
+        return strtolower((string) $this->status) === 'cancelled';
     }
 
     public function canBeCancelled()
     {
-        return in_array($this->status, ['pending', 'confirmed']);
+        return in_array(strtolower((string) $this->status), ['pending', 'confirmed']);
     }
 
     public function getDurationInHours()
