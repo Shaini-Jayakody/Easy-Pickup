@@ -208,32 +208,33 @@ trait BookingTrait
     /**
      * Check if car is available (for AJAX)
      */
-    public function isCarAvailable($carId, $startDate, $endDate, $excludeBookingId = null): bool
-    {
-        if (!$carId || !$startDate || !$endDate) {
-            return false;
-        }
-
-        $start = Carbon::parse(trim($startDate));
-        $end = Carbon::parse(trim($endDate));
-
-        if ($end->lessThanOrEqualTo($start)) {
-            return false;
-        }
-
-        $query = Booking::where('car_id', $carId)
-            ->whereIn('status', ['pending', 'confirmed', 'active'])
-            ->where(function($q) use ($start, $end) {
-                $q->where('rental_start_date', '<', $end)
-                  ->where('rental_end_date', '>', $start);
-            });
-
-        if ($excludeBookingId) {
-            $query->where('booking_id', '!=', $excludeBookingId);
-        }
-
-        return !$query->exists();
+public function isCarAvailable($carId, $startDate, $endDate, $excludeBookingId = null): bool
+{
+    if (!$carId || !$startDate || !$endDate) {
+        return false;
     }
+
+    $start = Carbon::parse(trim($startDate));
+    $end = Carbon::parse(trim($endDate));
+
+    if ($end->lessThanOrEqualTo($start)) {
+        return false;
+    }
+
+    $query = Booking::where('car_id', $carId)
+        ->whereIn('status', ['pending', 'confirmed', 'active'])
+        ->where(function($q) use ($start, $end) {
+            $q->where('rental_start_date', '<', $end)
+              ->where('rental_end_date', '>', $start);
+        });
+
+    // Exclude current booking when editing
+    if ($excludeBookingId) {
+        $query->where('booking_id', '!=', $excludeBookingId);
+    }
+
+    return !$query->exists();
+}
 
     /**
      * Get booking statistics

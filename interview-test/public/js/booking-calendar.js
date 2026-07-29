@@ -6,6 +6,7 @@ class BookingCalendar {
     constructor(options = {}) {
         this.containerId = options.containerId || 'calendar-container';
         this.carId = options.carId || null;
+        this.bookingId = options.bookingId || null;
         this.bookings = [];
         this.selectedStart = null;
         this.selectedEnd = null;
@@ -54,10 +55,16 @@ class BookingCalendar {
         }
         
         const self = this;
+
+        if (window.isEditMode && window.bookingId) {
+        data.booking_id = window.bookingId;
+    }
         $.ajax({
             url: '/bookings/get-car-bookings',
             type: 'GET',
-            data: { car_id: this.carId },
+            data: { car_id: this.carId ,
+                 booking_id: this.bookingId || null 
+            },
             success: function(response) {
                 self.bookings = response.bookings || [];
                 self.render();
@@ -626,6 +633,7 @@ $(document).ready(function() {
             calendar = new BookingCalendar({
                 containerId: 'calendar-container',
                 carId: carId,
+                 bookingId: window.bookingId || null,
                 onDateRangeSelect: function(start, end) {
                     console.log('Range selected:', start, end);
                     // Trigger availability check

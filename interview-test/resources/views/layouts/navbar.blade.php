@@ -16,12 +16,23 @@
         <!-- Collect the nav links, forms, and other content for toggling -->
         <div class="collapse navbar-collapse" id="main-navbar">
             <!-- Left Side Navigation -->
-            <ul class="nav navbar-nav">
-                <li class="{{ request()->routeIs('home') ? 'active' : '' }}">
-                    <a href="{{ route('home') }}">
-                        <span class="glyphicon glyphicon-home"></span> Home
-                    </a>
-                </li>
+           <ul class="nav navbar-nav">
+                @auth
+                    <!-- For logged-in users, Home goes to Dashboard -->
+                    <li class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                        <a href="{{ route('dashboard') }}">
+                            <span class="glyphicon glyphicon-dashboard"></span> Dashboard
+                        </a>
+                    </li>
+                @else
+                    <!-- For guests, Home goes to Welcome page -->
+                    <li class="{{ request()->routeIs('home') ? 'active' : '' }}">
+                        <a href="{{ route('home') }}">
+                            <span class="glyphicon glyphicon-home"></span> Home
+                        </a>
+                    </li>
+                @endauth
+                
                 <li class="{{ request()->routeIs('car*') ? 'active' : '' }}">
                     <a href="{{ route('car') }}">
                         <span class="glyphicon glyphicon-list-alt"></span> Cars

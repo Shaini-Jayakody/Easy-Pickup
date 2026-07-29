@@ -21,7 +21,8 @@ class BookingController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $bookings = $this->getAllBookings();
+            // Get only the logged-in user's bookings
+            $bookings = $this->getBookingsByUser(Auth::id());
             
             return DataTables::of($bookings)
                 ->addIndexColumn()
@@ -302,75 +303,74 @@ public function cancel(Request $request, $id)
     /**
      * Check car availability (AJAX)
      */
-    public function checkAvailability(Request $request)
-    {
-        try {
-            $carId = $request->car_id;
-            $startDate = $request->start_date;
-            $endDate = $request->end_date;
-            $bookingId = $request->booking_id;
-            
-            if (!$carId || !$startDate || !$endDate) {
-                return response()->json([
-                    'available' => false,
-                    'message' => 'Missing required parameters'
-                ], 400);
-            }
-            
-            $available = $this->isCarAvailable($carId, $startDate, $endDate, $bookingId);
-            
-            return response()->json([
-                'available' => $available,
-                'message' => $available
-                    ? 'Car is available for the selected dates.'
-                    : 'This car is not available for the selected dates because it overlaps an existing booking.'
-            ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'available' => false,
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Get car bookings for calendar (AJAX)
-     */
-    public function getCarBookings(Request $request)
-    {
+public function checkAvailability(Request $request)
+{
+    try {
         $carId = $request->car_id;
+        $startDate = $request->start_date;
+        $endDate = $request->end_date;
         $bookingId = $request->booking_id;
         
-        if (!$carId) {
-            return response()->json(['bookings' => []]);
+        if (!$carId || !$startDate || !$endDate) {
+            return response()->json([
+                'available' => false,
+                'message' => 'Missing required parameters'
+            ], 400);
         }
         
-        $query = Booking::where('car_id', $carId)
-            ->whereNotIn('status', ['cancelled']);
-        
-        // Exclude current booking when editing
-        if ($bookingId) {
-            $query->where('booking_id', '!=', $bookingId);
-        }
-        
-        $bookings = $query->select('booking_id', 'rental_start_date', 'rental_end_date', 'status')
-            ->get()
-            ->map(function($booking) {
-                return [
-                    'id' => $booking->booking_id,
-                    'rental_start_date' => $booking->rental_start_date,
-                    'rental_end_date' => $booking->rental_end_date,
-                    'status' => $booking->status,
-                    'status_label' => $this->getStatusText($booking->status)
-                ];
-            });
+        $available = $this->isCarAvailable($carId, $startDate, $endDate, $bookingId);
         
         return response()->json([
-            'bookings' => $bookings
+            'available' => $available,
+            'message' => $available
+                ? 'Car is available for the selected dates.'
+                : 'This car is not available for the selected dates because it overlaps an existing booking.'
         ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'available' => false,
+            'message' => $e->getMessage()
+        ], 500);
     }
-
+}
+  /**
+ * Get car bookings for calendar (AJAX)
+ * This returns ALL bookings for a car, regardless of user
+ */
+public function getCarBookings(Request $request)
+{
+    $carId = $request->car_id;
+    $bookingId = $request->booking_id;
+    
+    if (!$carId) {
+        return response()->json(['bookings' => []]);
+    }
+    
+    $query = Booking::where('car_id', $carId)
+        ->whereNotIn('status', ['cancelled']);
+    
+    // Exclude current booking when editing (so user can see their own booking as available)
+    if ($bookingId) {
+        $query->where('booking_id', '!=', $bookingId);
+    }
+    
+    $bookings = $query->select('booking_id', 'rental_start_date', 'rental_end_date', 'status')
+        ->get()
+        ->map(function($booking) {
+            return [
+                'id' => $booking->booking_id,
+                'rental_start_date' => $booking->rental_start_date,
+                'rental_end_date' => $booking->rental_end_date,
+                'status' => $booking->status,
+                'status_label' => $this->getStatusText($booking->status)
+            ];
+        });
+    
+    return response()->json([
+        'bookings' => $bookings
+    ]);
+}
     /**
      * Get booking statistics (for dashboard)
      */
