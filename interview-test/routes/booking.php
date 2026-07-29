@@ -27,6 +27,15 @@ Route::middleware(['auth'])->group(function () {
         ->name('bookings.store');
 
     // ============================================
+    // CHECK CAR AVAILABILITY (AJAX)
+    // ============================================
+    Route::get('/bookings/check-availability', [BookingController::class, 'checkAvailability'])
+        ->name('bookings.check-availability');
+
+    Route::get('/bookings/get-car-bookings', [BookingController::class, 'getCarBookings'])
+        ->name('bookings.calendar');
+
+    // ============================================
     // VIEW BOOKING DETAILS
     // ============================================
     Route::get('/bookings/{id}', [BookingController::class, 'show'])
@@ -39,12 +48,4 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/bookings/{id}/status', [BookingController::class, 'updateStatus'])
             ->name('bookings.update-status');
     });
-
-    // ============================================
-    // CHECK CAR AVAILABILITY (AJAX)
-    // ============================================
-    Route::get('/bookings/check-availability', [BookingController::class, 'checkAvailability'])
-        ->name('bookings.check-availability');
-
-    Route::get('/bookings/get-car-bookings', [BookingController::class, 'getCarBookings'])->name('bookings.calendar');
 });

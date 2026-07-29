@@ -83,6 +83,40 @@ $(document).ready(function() {
         }
     }
 
+    function validateDateSelection() {
+        var carId = $('#car_id').val();
+        var start = $('#rental_start_date').val();
+        var end = $('#rental_end_date').val();
+
+        if (!carId || !start || !end) {
+            return null;
+        }
+
+        var startDate = new Date(start);
+        var endDate = new Date(end);
+        var now = new Date();
+
+        if (endDate <= startDate) {
+            return 'Rental end date must be after the start date.';
+        }
+
+        if (startDate < now) {
+            return 'Rental must start in the future.';
+        }
+
+        var diffHours = Math.round((endDate - startDate) / (1000 * 60 * 60));
+        if (diffHours < 2) {
+            return 'Rental duration must be at least 2 hours.';
+        }
+
+        var diffDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
+        if (diffDays > 30) {
+            return 'Rental duration cannot exceed 1 month.';
+        }
+
+        return null;
+    }
+
     // ===== Check Car Availability =====
     function checkAvailability() {
         var carId = $('#car_id').val();
@@ -90,6 +124,14 @@ $(document).ready(function() {
         var end = $('#rental_end_date').val();
         
         var $status = $('#availability-status');
+        var validationError = validateDateSelection();
+
+        if (validationError) {
+            $status.show().removeClass('alert-success alert-info alert-warning').addClass('alert-danger');
+            $status.html('❌ ' + validationError);
+            updateSubmitButton();
+            return;
+        }
         
         if (carId && start && end) {
             $status.show().removeClass('alert-success alert-danger alert-warning').addClass('alert-info');
@@ -104,20 +146,30 @@ $(document).ready(function() {
                     end_date: end
                 },
                 success: function(response) {
-                    if (response.available) {
-                        $status.removeClass('alert-info alert-danger').addClass('alert-success');
-                        $status.html('✅ Car is available for selected dates');
-                        $('#car_id').removeClass('is-invalid').addClass('is-valid');
+                    if (response && typeof response.available !== 'undefined') {
+                        if (response.available) {
+                            $status.removeClass('alert-info alert-danger alert-warning').addClass('alert-success');
+                            $status.html('✅ Car is available for selected dates');
+                            $('#car_id').removeClass('is-invalid').addClass('is-valid');
+                        } else {
+                            $status.removeClass('alert-info alert-success alert-warning').addClass('alert-danger');
+                            $status.html(response.message || '❌ Car is NOT available for selected dates');
+                            $('#car_id').removeClass('is-valid').addClass('is-invalid');
+                        }
                     } else {
-                        $status.removeClass('alert-info alert-success').addClass('alert-danger');
-                        $status.html('❌ Car is NOT available for selected dates');
-                        $('#car_id').removeClass('is-valid').addClass('is-invalid');
+                        $status.removeClass('alert-info alert-success').addClass('alert-warning');
+                        $status.html('⚠️ Availability check could not be confirmed. You can still continue, but please verify before booking.');
                     }
                     updateSubmitButton();
                 },
-                error: function() {
-                    $status.removeClass('alert-info alert-success').addClass('alert-warning');
-                    $status.html('⚠️ Unable to check availability');
+                error: function(xhr) {
+                    var message = '⚠️ Availability check could not be confirmed. You can still continue, but please verify before booking.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        message = '⚠️ ' + xhr.responseJSON.message;
+                    }
+                    $status.removeClass('alert-info alert-success alert-danger').addClass('alert-warning');
+                    $status.html(message);
+                    updateSubmitButton();
                 }
             });
         } else {
@@ -143,7 +195,7 @@ $(document).ready(function() {
         
         // Check availability status
         var statusText = $('#availability-status').text();
-        if (statusText.includes('NOT available') || statusText.includes('Unable to check')) {
+        if (statusText.includes('NOT available')) {
             hasError = true;
         }
         
@@ -154,6 +206,10 @@ $(document).ready(function() {
             if (endDate <= startDate) {
                 hasError = true;
             }
+        }
+
+        if (statusText.includes('must be at least 2 hours') || statusText.includes('cannot exceed 1 month') || statusText.includes('must start in the future') || statusText.includes('must be after the start date')) {
+            hasError = true;
         }
         
         if (carId && start && end && !hasError && !statusText.includes('NOT available')) {
@@ -224,6 +280,7 @@ $(document).ready(function() {
         
         var formData = {
             car_id: $('#car_id').val(),
+            user_id: $('#user_id').val(),
             rental_start_date: $('#rental_start_date').val(),
             rental_end_date: $('#rental_end_date').val(),
             notes: $('#notes').val(),
@@ -245,7 +302,7 @@ $(document).ready(function() {
                     if (isSwalAvailable() && swal) {
                         swal.fire({
                             icon: 'success',
-                            title: '🎉 Success!',
+                            title: 'Success!',
                             text: response.message,
                             confirmButtonText: 'OK',
                             confirmButtonColor: '#3b82f6'

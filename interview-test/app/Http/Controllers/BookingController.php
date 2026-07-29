@@ -98,10 +98,7 @@ class BookingController extends Controller
     public function store(Request $request)
     {
         try {
-            // Validate using trait
             $validated = $this->validateBookingData($request->all());
-            
-            // Create booking using trait
             $result = $this->createBooking($validated);
 
             return response()->json($result);
@@ -167,7 +164,12 @@ public function checkAvailability(Request $request)
         
         $available = $this->isCarAvailable($carId, $startDate, $endDate);
         
-        return response()->json(['available' => $available]);
+        return response()->json([
+            'available' => $available,
+            'message' => $available
+                ? 'Car is available for the selected dates.'
+                : 'This car is not available for the selected dates because it overlaps an existing booking.'
+        ]);
         
     } catch (\Exception $e) {
         return response()->json([
@@ -189,7 +191,7 @@ public function checkAvailability(Request $request)
         }
         
         $bookings = Booking::where('car_id', $carId)
-            ->whereIn('status', ['pending', 'confirmed', 'active'])
+            ->whereNotIn('status', ['cancelled'])
             ->select('booking_id', 'rental_start_date', 'rental_end_date', 'status')
             ->get()
             ->map(function($booking) {

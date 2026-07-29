@@ -70,28 +70,28 @@ $(document).ready(function() {
                     <div class="row">
                         <div class="col-md-6">
                             <h4>Customer Details</h4>
-                            <p><strong>Name:</strong> ${booking.user.name}</p>
-                            <p><strong>NIC:</strong> ${booking.user.id_num}</p>
-                            <p><strong>Email:</strong> ${booking.user.email}</p>
+                            <p><strong>Name:</strong> ${booking.user?.name || 'N/A'}</p>
+                            <p><strong>NIC:</strong> ${booking.user?.id_num || booking.user?.nic || 'N/A'}</p>
+                            <p><strong>Email:</strong> ${booking.user?.email || 'N/A'}</p>
                         </div>
                         <div class="col-md-6">
                             <h4>Car Details</h4>
-                            <p><strong>Car:</strong> ${booking.car.name}</p>
-                            <p><strong>Plate No:</strong> ${booking.car.number_plate}</p>
-                            <p><strong>Ref No:</strong> ${booking.car.ref_no}</p>
+                            <p><strong>Car:</strong> ${booking.car?.name || 'N/A'}</p>
+                            <p><strong>Plate No:</strong> ${booking.car?.number_plate || booking.car?.plate_no || 'N/A'}</p>
+                            <p><strong>Ref No:</strong> ${booking.car?.ref_no || 'N/A'}</p>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6">
                             <h4>Rental Period</h4>
-                            <p><strong>Start:</strong> ${new Date(booking.rental_start_date).toLocaleString()}</p>
-                            <p><strong>End:</strong> ${new Date(booking.rental_end_date).toLocaleString()}</p>
-                            <p><strong>Duration:</strong> ${booking.duration_in_hours} hours</p>
+                            <p><strong>Start:</strong> ${new Date(booking.rental_start_date || booking.rental_start).toLocaleString()}</p>
+                            <p><strong>End:</strong> ${new Date(booking.rental_end_date || booking.rental_end).toLocaleString()}</p>
+                            <p><strong>Duration:</strong> ${(booking.duration_in_hours || booking.duration || 0)} hours</p>
                         </div>
                         <div class="col-md-6">
                             <h4>Status</h4>
                             <p><span class="${booking.status_badge}">${booking.status_text}</span></p>
-                            <p><strong>Booking Ref:</strong> ${booking.booking_ref_no}</p>
+                            <p><strong>Booking Ref:</strong> ${booking.booking_ref_no || booking.ref_no || 'N/A'}</p>
                             ${booking.notes ? `<p><strong>Notes:</strong> ${booking.notes}</p>` : ''}
                         </div>
                     </div>

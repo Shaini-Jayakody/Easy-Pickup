@@ -404,7 +404,7 @@ class BookingCalendar {
         
         if (endDate < startDate) return;
         
-        // Check if hover range has booked dates
+        // Prevent hover highlighting across any already-booked dates.
         if (this.hasBookedDates(this.selectedStart, dateStr)) {
             return;
         }
@@ -460,9 +460,8 @@ class BookingCalendar {
                 return;
             }
             
-            // Check if range has any booked dates
             if (this.hasBookedDates(this.selectedStart, dateStr)) {
-                this.showTooltip('⚠️ This range includes booked dates. Please select available dates only.');
+                this.showTooltip('⚠️ This range overlaps an existing booking for this car. Please choose a different range.');
                 this.selectedStart = null;
                 this.selectedEnd = null;
                 this.isSelecting = false;
@@ -470,7 +469,7 @@ class BookingCalendar {
                 this.updateDateInputs();
                 return;
             }
-            
+
             this.selectedEnd = dateStr;
             this.isSelecting = false;
             this.render();
@@ -481,7 +480,7 @@ class BookingCalendar {
                 this.onDateRangeSelect(this.selectedStart, this.selectedEnd);
             }
             
-            this.showTooltip('✅ Range selected successfully!');
+            this.showTooltip('✅ Range selected. Existing bookings are highlighted in red and will be validated on submit.');
         } else {
             // Reset selection
             this.selectedStart = dateStr;
