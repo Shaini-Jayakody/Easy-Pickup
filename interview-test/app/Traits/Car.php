@@ -11,6 +11,8 @@ use Illuminate\Validation\ValidationException;
 
 trait Car
 {
+   
+    // RETRIEVAL METHODS
     /**
      * Get all cars with relationships
      */
@@ -27,6 +29,22 @@ trait Car
         return $this->getAllCars()->whereHas('model', function($query) use ($brandId) {
             $query->where('brand_id', $brandId);
         });
+    }
+
+    /**
+     * Get a single car by ID with relationships
+     */
+    public function getCarById($id)
+    {
+        return CarModel::with(['model', 'model.brand'])->findOrFail($id);
+    }
+
+    /**
+     * Get car by reference number
+     */
+    public function getCarByRef(string $refNo): ?CarModel
+    {
+        return CarModel::where('ref_no', $refNo)->first();
     }
 
     /**
@@ -60,6 +78,8 @@ trait Car
     {
         return Model::get();
     }
+
+    // CRUD OPERATIONS
 
     /**
      * Save a new car
@@ -109,24 +129,11 @@ trait Car
         ];
     }
 
-    /**
-     * Get a single car by ID
-     */
-    public function getCarById($id)
-    {
-        return CarModel::with(['model', 'model.brand'])->findOrFail($id);
-    }
+
+    // UNIQUENESS CHECKS
 
     /**
-     * Get car by reference number
-     */
-    public function getCarByRef(string $refNo): ?CarModel
-    {
-        return CarModel::where('ref_no', $refNo)->first();
-    }
-
-    /**
-     * Check if engine number exists
+     * Check if engine number exists (with optional exclude)
      */
     public function engineNumberExists(string $engineNumber, $excludeId = null): bool
     {
@@ -139,9 +146,8 @@ trait Car
         return $query->exists();
     }
 
-
     /**
-     * Check if chassis number exists
+     * Check if chassis number exists (with optional exclude)
      */
     public function chassisExists(string $chassisNumber, $excludeId = null): bool
     {
@@ -155,7 +161,7 @@ trait Car
     }
 
     /**
-     * Check if number plate exists
+     * Check if number plate exists (with optional exclude)
      */
     public function numberPlateExists(string $numberPlate, $excludeId = null): bool
     {
@@ -168,23 +174,26 @@ trait Car
         return $query->exists();
     }
 
-    /**
- * Generate a unique reference number (no duplicates)
- */
-public function generateUniqueReference(): string
-{
-    do {
-        // Format: CAR + YYMMDD + 4 digit random
-        $refNo = 'CAR' . date('ymd') . rand(1000, 9999);
-    } while ($this->getCarByRef($refNo));
-    
-    return $refNo;
-}
+
+    // HELPER METHODS
 
     /**
-     * Validate car data
+     * Generate a unique reference number (no duplicates)
      */
-    public function validateCarData(array $data, $chassisId = null)
+    public function generateUniqueReference(): string
+    {
+        do {
+            // Format: CAR + YYMMDD + 4 digit random
+            $refNo = 'CAR' . date('ymd') . rand(1000, 9999);
+        } while ($this->getCarByRef($refNo));
+        
+        return $refNo;
+    }
+
+    /**
+     * Validate car data (with optional exclude ID for updates)
+     */
+    public function validateCarData(array $data, $excludeId = null)
     {
         $rules = [
             'car_brand' => ['required', 'exists:tbl_car_brands,id'],
@@ -198,41 +207,59 @@ public function generateUniqueReference(): string
             'car_trans' => ['required', 'in:Auto,Manual,Tiptronic'],
         ];
 
-        // Add unique rules
-        if ($chassisId) {
-            $rules['chas_number'][] = 'unique:tbl_cars,chassis_number,' . $chassisId;
-            $rules['number_plate'][] = 'unique:tbl_cars,number_plate,' . $chassisId;
+        // Add uniqueness rules with exclude if provided
+        if ($excludeId) {
+            $rules['chas_number'][] = 'unique:tbl_cars,chassis_number,' . $excludeId;
+            $rules['number_plate'][] = 'unique:tbl_cars,number_plate,' . $excludeId;
+            $rules['eng_number'][] = 'unique:tbl_cars,engine_number,' . $excludeId;
         } else {
             $rules['chas_number'][] = 'unique:tbl_cars,chassis_number';
             $rules['number_plate'][] = 'unique:tbl_cars,number_plate';
+            $rules['eng_number'][] = 'unique:tbl_cars,engine_number';
         }
 
         $messages = [
+            // Brand & Model
             'car_brand.required' => 'Please select a brand.',
             'car_brand.exists' => 'Selected brand is invalid.',
             'car_model.required' => 'Please select a model.',
             'car_model.exists' => 'Selected model is invalid.',
+            
+            // Car Name
             'car_name.required' => 'Car name is required.',
             'car_name.min' => 'Car name must be at least 2 characters.',
             'car_name.max' => 'Car name cannot exceed 255 characters.',
+            
+            // Color
             'car_color.required' => 'Car color is required.',
             'car_color.min' => 'Color must be at least 2 characters.',
             'car_color.max' => 'Color cannot exceed 100 characters.',
+            
+            // Engine Number
             'eng_number.required' => 'Engine number is required.',
             'eng_number.min' => 'Engine number must be at least 2 characters.',
             'eng_number.max' => 'Engine number cannot exceed 50 characters.',
+            'eng_number.unique' => 'This engine number already exists. Please enter a unique engine number.',
+            
+            // Chassis Number
             'chas_number.required' => 'Chassis number is required.',
             'chas_number.min' => 'Chassis number must be at least 2 characters.',
             'chas_number.max' => 'Chassis number cannot exceed 255 characters.',
             'chas_number.unique' => 'This chassis number already exists. Please enter a unique chassis number.',
+            
+            // Number Plate
             'number_plate.required' => 'Number plate is required.',
             'number_plate.min' => 'Number plate must be at least 2 characters.',
             'number_plate.max' => 'Number plate cannot exceed 20 characters.',
             'number_plate.unique' => 'This number plate already exists. Please enter a unique number plate.',
+            
+            // Rent Price
             'rent_price_per_hour.required' => 'Rent price per hour is required.',
             'rent_price_per_hour.numeric' => 'Rent price must be a valid number.',
             'rent_price_per_hour.min' => 'Rent price cannot be negative.',
             'rent_price_per_hour.max' => 'Rent price is too high.',
+            
+            // Transmission
             'car_trans.required' => 'Please select transmission type.',
             'car_trans.in' => 'Invalid transmission type selected.',
         ];
@@ -256,6 +283,8 @@ public function generateUniqueReference(): string
         }
         return in_array(Auth::user()->role, ['admin', 'manager']);
     }
+
+    // FRONTEND VALIDATION RULES (for JavaScript)
 
     /**
      * Get frontend validation rules for JavaScript
@@ -313,7 +342,7 @@ public function generateUniqueReference(): string
                     'required' => 'Chassis number is required.',
                     'min' => 'Chassis number must be at least 2 characters.',
                     'max' => 'Chassis number cannot exceed 255 characters.',
-                    'unique' => 'This chassis number already exists.'
+                    'unique' => 'This chassis number already exists. Please enter a unique chassis number.'
                 ]
             ],
             'number_plate' => [
@@ -324,7 +353,7 @@ public function generateUniqueReference(): string
                     'required' => 'Number plate is required.',
                     'min' => 'Number plate must be at least 2 characters.',
                     'max' => 'Number plate cannot exceed 20 characters.',
-                    'unique' => 'This number plate already exists.'
+                    'unique' => 'This number plate already exists. Please enter a unique number plate.'
                 ]
             ],
             'rent_price_per_hour' => [

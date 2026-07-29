@@ -46,6 +46,7 @@
                             <th>PLATE NO</th>
                             <th>ENGINE NO</th>
                             <th>CHASSIS NO</th>
+                            <th>ACTION</th>
                         </tr>
                     </thead>
                     <tbody>

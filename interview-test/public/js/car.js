@@ -26,18 +26,18 @@ var CarValidation = (function() {
                 max: 'Car name cannot exceed 255 characters.'
             }
         },
-      car_color: {
-    required: true,
-    min: 3,
-    max: 100,
-    pattern: /^[a-zA-Z\s]+$/,  // Only letters and spaces
-    messages: {
-        required: 'Car color is required.',
-        min: 'Color must be at least 2 characters.',
-        max: 'Color cannot exceed 100 characters.',
-        pattern: 'Color should only contain letters and spaces.'
-    }
-},
+        car_color: {
+            required: true,
+            min: 3,
+            max: 100,
+            pattern: /^[a-zA-Z\s]+$/,  // Only letters and spaces
+            messages: {
+                required: 'Car color is required.',
+                min: 'Color must be at least 2 characters.',
+                max: 'Color cannot exceed 100 characters.',
+                pattern: 'Color should only contain letters and spaces.'
+            }
+        },
         number_plate: {
             required: true,
             min: 2,
@@ -129,6 +129,16 @@ var CarValidation = (function() {
         car_trans: 'Transmission'
     };
 
+    // ===== Get Car ID for Update Mode =====
+    function getCarId() {
+        var carId = $('#car_id').val();
+        return carId && carId !== '' ? carId : null;
+    }
+
+    function isEditMode() {
+        return getCarId() !== null;
+    }
+
     // ===== Main Validation Function =====
     function validateField(fieldName, value, $input, $error) {
         var rule = rules[fieldName];
@@ -143,8 +153,8 @@ var CarValidation = (function() {
         // Pattern validation (for color field)
         if (rule.pattern && value.length > 0) {
             if (!rule.pattern.test(value)) {
-               showError($input, $error, rule.messages.pattern);
-             return false;
+                showError($input, $error, rule.messages.pattern);
+                return false;
             }
         }
         
@@ -204,34 +214,43 @@ var CarValidation = (function() {
         showSuccess($input, $error);
         return true;
     }
+// ===== Unique Checks (AJAX) with Car ID Support =====
+function checkUniqueness(fieldName, value, $input, $error, url) {
+    if (value.length === 0) return true;
 
-    // ===== Unique Checks (AJAX) =====
-    function checkUniqueness(fieldName, value, $input, $error, url) {
-        if (value.length === 0) return true;
-
-        var result = true;
-        $.ajax({
-            url: url,
-            type: "GET",
-            data: { value: value },
-            async: false,
-            success: function(response) {
-                if (response.exists) {
-                    showError($input, $error, rules[fieldName].messages.unique);
-                    result = false;
-                } else {
-                    showSuccess($input, $error);
-                    result = true;
-                }
-            },
-            error: function(xhr, status, error) {
-                console.log('AJAX Error for', fieldName + ':', status, error);
+    var result = true;
+    var data = { value: value };
+    
+    // If editing, pass car_id to exclude current record
+    var carId = getCarId();
+    if (carId) {
+        data.car_id = carId;
+    }
+    
+    console.log('Checking uniqueness for:', fieldName, 'Value:', value, 'Car ID:', carId);
+    
+    $.ajax({
+        url: url,
+        type: "GET",
+        data: data,
+        async: false,
+        success: function(response) {
+            console.log('Uniqueness response:', response);
+            if (response.exists) {
+                showError($input, $error, rules[fieldName].messages.unique);
+                result = false;
+            } else {
+                showSuccess($input, $error);
                 result = true;
             }
-        });
-        return result;
-    }
-
+        },
+        error: function(xhr, status, error) {
+            console.log('AJAX Error for', fieldName + ':', status, error);
+            result = true;
+        }
+    });
+    return result;
+}
     // ===== UI Helpers =====
     function showError($input, $error, message) {
         $error.text(message).show();
@@ -352,6 +371,16 @@ var CarValidation = (function() {
                     scrollTop: $input.closest('.form-group').offset().top - 100
                 }, 500);
             }
+        },
+
+        // Helper to check if in edit mode
+        isEditMode: function() {
+            return isEditMode();
+        },
+
+        // Helper to get car ID
+        getCarId: function() {
+            return getCarId();
         }
     };
 })();

@@ -50,7 +50,6 @@ $(document).ready(function() {
     // ===== Color Field - Allow Only Letters =====
     function restrictColorInput() {
         $('#car_color').on('input', function() {
-            // Remove any numbers and special characters, keep only letters and spaces
             var value = $(this).val();
             var cleaned = value.replace(/[^a-zA-Z\s]/g, '');
             if (value !== cleaned) {
@@ -60,9 +59,7 @@ $(document).ready(function() {
             updateSubmitButton();
         });
 
-        // Block number keys from being typed
         $('#car_color').on('keydown', function(e) {
-            // Allow: backspace, delete, tab, escape, enter, left/right arrows
             if (e.key === 'Backspace' || e.key === 'Delete' || e.key === 'Tab' || 
                 e.key === 'Escape' || e.key === 'Enter' || e.key === 'ArrowLeft' || 
                 e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown' ||
@@ -70,7 +67,6 @@ $(document).ready(function() {
                 return;
             }
             
-            // Block numbers
             if (e.key >= '0' && e.key <= '9') {
                 e.preventDefault();
                 return false;
@@ -80,7 +76,6 @@ $(document).ready(function() {
 
     // ===== Price Field =====
     function formatPrice() {
-        // Format on blur (when user leaves the field)
         $('#rent_price_per_hour').on('blur', function() {
             var value = $(this).val().trim();
             if (value.length > 0 && !isNaN(value) && value !== '') {
@@ -93,12 +88,9 @@ $(document).ready(function() {
             }
         });
 
-        // Only allow numbers and decimal point while typing
         $('#rent_price_per_hour').on('input', function() {
             var value = $(this).val();
-            // Remove any non-numeric characters except decimal point
             value = value.replace(/[^0-9.]/g, '');
-            // Only allow one decimal point
             var parts = value.split('.');
             if (parts.length > 2) {
                 value = parts[0] + '.' + parts.slice(1).join('');
@@ -107,10 +99,8 @@ $(document).ready(function() {
             updateSubmitButton();
         });
 
-        // Prevent multiple decimal points
         $('#rent_price_per_hour').on('keydown', function(e) {
             var value = $(this).val();
-            // If trying to type a decimal point and there's already one, block it
             if (e.key === '.' && value.indexOf('.') !== -1) {
                 e.preventDefault();
                 return false;
@@ -122,26 +112,21 @@ $(document).ready(function() {
     function updateSubmitButton() {
         var $submitBtn = $('#submit-btn');
         var hasErrors = false;
-        var errorMessages = [];
         
-        // Check all fields for errors
         $('.error-msg').each(function() {
             var errorText = $(this).text().trim();
             if ($(this).is(':visible') && errorText.length > 0) {
                 hasErrors = true;
-                errorMessages.push(errorText);
-                return false; // break the loop
+                return false;
             }
         });
         
-        // Also check for invalid fields without error messages
         if (!hasErrors) {
             $('.is-invalid').each(function() {
                 var fieldId = $(this).attr('id');
                 var $error = $('#' + fieldId + '-error');
                 if ($error.length === 0 || $error.text().trim().length === 0) {
                     hasErrors = true;
-                    errorMessages.push('Invalid field: ' + fieldId);
                     return false;
                 }
             });
@@ -149,29 +134,23 @@ $(document).ready(function() {
         
         if (hasErrors) {
             $submitBtn.prop('disabled', true);
-            $submitBtn.attr('title', 'Please fix all errors before submitting');
             $submitBtn.css('opacity', '0.6');
             $submitBtn.css('cursor', 'not-allowed');
         } else {
-            // Check if all required fields have values
             var allFilled = true;
-            var emptyFields = [];
             
             $('.form-control[required], .select2[required]').each(function() {
                 var $this = $(this);
-                var fieldName = $this.attr('name') || $this.attr('id');
                 var value = $this.val();
                 
                 if ($this.is('select') || $this.hasClass('select2')) {
                     if (!value || value === '' || value === null) {
                         allFilled = false;
-                        emptyFields.push(fieldName);
                         return false;
                     }
                 } else {
                     if (!value || value.trim() === '') {
                         allFilled = false;
-                        emptyFields.push(fieldName);
                         return false;
                     }
                 }
@@ -179,16 +158,28 @@ $(document).ready(function() {
             
             if (allFilled) {
                 $submitBtn.prop('disabled', false);
-                $submitBtn.attr('title', '');
                 $submitBtn.css('opacity', '1');
                 $submitBtn.css('cursor', 'pointer');
             } else {
                 $submitBtn.prop('disabled', true);
-                $submitBtn.attr('title', 'Please fill in all required fields');
                 $submitBtn.css('opacity', '0.6');
                 $submitBtn.css('cursor', 'not-allowed');
             }
         }
+    }
+
+    // ===== Check if in Edit Mode =====
+    function isEditMode() {
+        return $('#car_id').length > 0 && $('#car_id').val() !== '';
+    }
+
+    // ===== Get Form Action URL =====
+    function getFormAction() {
+        if (isEditMode()) {
+            var carId = $('#car_id').val();
+            return '/car/' + carId + '/update';
+        }
+        return '/car/save';
     }
 
     // ===== Attach validation events =====
@@ -207,8 +198,6 @@ $(document).ready(function() {
             CarValidation.validate('car_name');
             updateSubmitButton();
         });
-        
-        // Color validation is handled by restrictColorInput()
         
         $('#number_plate').on('input', function() { 
             CarValidation.validate('number_plate');
@@ -243,8 +232,6 @@ $(document).ready(function() {
             }
         });
         
-        // Price validation is handled by formatPrice()
-        
         $('#car_trans').on('change', function() { 
             CarValidation.validate('car_trans');
             updateSubmitButton();
@@ -253,7 +240,6 @@ $(document).ready(function() {
 
     // ===== Check if SweetAlert is available =====
     function getSwal() {
-        // SweetAlert2 registers as 'Swal' in the global scope
         if (typeof Swal !== 'undefined') {
             return Swal;
         }
@@ -272,8 +258,7 @@ $(document).ready(function() {
         var swal = getSwal();
         
         if (!swal) {
-            // Fallback to browser alert
-            alert('Success!\n\n' + message + '\n\nRedirecting to car list...');
+            alert('✅ Success!\n\n' + message + '\n\nRedirecting to car list...');
             window.location.href = redirectUrl;
             return;
         }
@@ -303,8 +288,7 @@ $(document).ready(function() {
         var swal = getSwal();
         
         if (!swal) {
-            // Fallback to browser alert
-            alert('Error!\n\n' + message);
+            alert('❌ Error!\n\n' + message);
             return;
         }
         
@@ -320,6 +304,7 @@ $(document).ready(function() {
     // ===== Submit the form =====
     function submitForm() {
         console.log('Submitting form...');
+        console.log('Is Edit Mode:', isEditMode());
         
         // Show loading state
         $('#submit-text').hide();
@@ -340,11 +325,19 @@ $(document).ready(function() {
             _token: $('input[name="_token"]').val()
         };
         
+        // If editing, add _method for PUT
+        var url = getFormAction();
+        if (isEditMode()) {
+            formData._method = 'PUT';
+            formData.car_id = $('#car_id').val();
+        }
+        
         console.log('Form data:', formData);
+        console.log('Submit URL:', url);
         
         // Send AJAX request
         $.ajax({
-            url: "/car/save",
+            url: url,
             type: "POST",
             data: formData,
             dataType: "json",
@@ -355,16 +348,19 @@ $(document).ready(function() {
                 $('#submit-btn').prop('disabled', false);
                 
                 if (response.success) {
+                    var action = isEditMode() ? 'updated' : 'added';
                     showSuccessPopup(
-                        response.message || 'Car added successfully!',
+                        response.message || 'Car ' + action + ' successfully!',
                         '/car'
                     );
                     
-                    // Reset form
-                    $('#car-form')[0].reset();
-                    CarValidation.clearAll();
-                    $('#car_brand').val(null).trigger('change');
-                    $('#car_model').val(null).trigger('change');
+                    // Reset form for create mode, but keep data for edit mode
+                    if (!isEditMode()) {
+                        $('#car-form')[0].reset();
+                        CarValidation.clearAll();
+                        $('#car_brand').val(null).trigger('change');
+                        $('#car_model').val(null).trigger('change');
+                    }
                     updateSubmitButton();
                 }
             },
@@ -379,7 +375,6 @@ $(document).ready(function() {
                     var errors = xhr.responseJSON.errors;
                     console.log('Validation errors:', errors);
                     
-                    // Show errors on individual fields
                     if (typeof errors === 'object') {
                         $.each(errors, function(field, messages) {
                             var $error = $('#' + field + '-error');
@@ -390,7 +385,6 @@ $(document).ready(function() {
                         });
                     }
                     
-                    // Show first error in popup
                     var firstError = typeof errors === 'string' ? errors : errors[Object.keys(errors)[0]][0];
                     showErrorPopup(firstError || 'Please fix the errors above.');
                     updateSubmitButton();
@@ -453,6 +447,9 @@ $(document).ready(function() {
         }
         
         console.log('Car form found, initializing...');
+        console.log('Edit Mode:', isEditMode());
+        console.log('Car ID:', $('#car_id').val());
+        
         initSelect2();
         filterModelsByBrand();
         restrictColorInput(); 
