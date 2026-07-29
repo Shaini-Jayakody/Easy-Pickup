@@ -38,4 +38,11 @@ class IconHelper
     {
         return self::getSvgFile('add', $size);
     }
+       /**
+     * Get Rent/Book SVG Icon
+     */
+    public static function rent($size = 16)
+    {
+        return self::getSvgFile('rent', $size);
+    }
 }

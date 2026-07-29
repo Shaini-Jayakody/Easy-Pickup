@@ -47,9 +47,7 @@
                             <th>ENGINE NO</th>
                             <th>CHASSIS NO</th>
                             @auth
-                                @if(in_array(Auth::user()->role, ['admin', 'manager']))
-                                    <th>ACTION</th>
-                                @endif
+                                <th>ACTION</th>
                             @endauth
                         </tr>
                     </thead>
@@ -67,6 +65,7 @@
 <!-- Pass isAdmin variable to JavaScript -->
 <script>
     var isAdmin = {{ auth()->check() && in_array(auth()->user()->role ?? '', ['admin', 'manager']) ? 'true' : 'false' }};
+    var isAuthenticatedUser = {{ auth()->check() ? 'true' : 'false' }};
 </script>
 <script src="{{ asset('js/car-index.js') }}"></script>
 @endpush

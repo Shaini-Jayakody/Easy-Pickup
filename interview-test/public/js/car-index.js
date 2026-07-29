@@ -16,6 +16,10 @@ $(document).ready(function() {
         return typeof isAdmin !== 'undefined' && isAdmin === true;
     }
 
+    function isAuthenticatedUserFlag() {
+        return typeof isAuthenticatedUser !== 'undefined' && isAuthenticatedUser === true;
+    }
+
     // ===== Get columns based on user role =====
     function getColumns() {
         var columns = [
@@ -46,8 +50,8 @@ $(document).ready(function() {
             { data: 'chassis_number', name: 'chassis_number' }
         ];
         
-        // Only add action column if user is admin/manager
-        if (isAdminUser()) {
+        // Add action column for authenticated users
+        if (isAuthenticatedUserFlag()) {
             columns.push({ 
                 data: 'action', 
                 name: 'action', 

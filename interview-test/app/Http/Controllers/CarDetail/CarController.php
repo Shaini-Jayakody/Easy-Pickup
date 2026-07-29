@@ -29,8 +29,9 @@ class CarController extends Controller
                 $cars = $this->getCarsByBrand($request->brand_id);
             }
             
-            // Check if user has permission to see action column
-            $hasPermission = Auth::check() && in_array(Auth::user()->role, ['admin', 'manager']);
+            // Determine action column visibility and type based on user role
+            $isAdminOrManager = Auth::check() && in_array(Auth::user()->role, ['admin', 'manager']);
+            $isAuthenticated = Auth::check();
             
             $dataTable = DataTables::of($cars)
                 ->addIndexColumn()
@@ -69,23 +70,35 @@ class CarController extends Controller
                     return $car->chassis_number ?? 'N/A';
                 });
             
-            // ===== ONLY ADD ACTION COLUMN IF USER HAS PERMISSION =====
-            if ($hasPermission) {
-                $dataTable->addColumn('action', function($car) {
-                    $editBtn = '<a href="' . route('car.edit', $car->id) . '" 
-                                class="action-btn edit-btn" 
-                                title="Edit Car">
-                                ' . IconHelper::edit(14) . '
-                            </a>';
-                    
-                    $deleteBtn = '<button class="action-btn delete-car" 
-                                    data-id="' . $car->id . '" 
-                                    data-name="' . $car->name . '" 
-                                    title="Delete Car">
-                                    ' . IconHelper::delete(14) . '
-                                </button>';
-                    
-                    return '<div class="action-buttons">' . $editBtn . ' ' . $deleteBtn . '</div>';
+            // ===== ADD ACTION COLUMN FOR AUTHENTICATED USERS =====
+            if ($isAuthenticated) {
+                $dataTable->addColumn('action', function($car) use ($isAdminOrManager) {
+                    if ($isAdminOrManager) {
+                        $editBtn = '<a href="' . route('car.edit', $car->id) . '" 
+                                    class="action-btn edit-btn" 
+                                    title="Edit Car">
+                                    ' . IconHelper::edit(14) . '
+                                </a>';
+                        
+                        $deleteBtn = '<button class="action-btn delete-car" 
+                                        data-id="' . $car->id . '" 
+                                        data-name="' . $car->name . '" 
+                                        title="Delete Car">
+                                        ' . IconHelper::delete(14) . '
+                                    </button>';
+                        
+                        return '<div class="action-buttons">' . $editBtn . ' ' . $deleteBtn . '</div>';
+                    }
+
+                  $rentUrl = route('bookings.create', ['car_id' => $car->id, 'user_id' => Auth::id()]);
+
+return '<a href="' . $rentUrl . '" 
+            class="btn btn-rent btn-xs rent-booking" 
+            data-id="' . $car->id . '" 
+            data-name="' . $car->name . '"
+            title="Rent this car">
+            ' . IconHelper::rent(14) . ' Rent
+        </a>';
                 });
                 $dataTable->rawColumns(['color', 'action']);
             } else {

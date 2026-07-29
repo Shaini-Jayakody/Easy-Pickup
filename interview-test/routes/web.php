@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Response;
 // INCLUDE ROUTES
 require __DIR__.'/auth.php';
 require __DIR__.'/car-details/car.php';
+require __DIR__.'/booking.php';
 
 
 // CSS ROUTE
