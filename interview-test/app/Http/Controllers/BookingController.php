@@ -28,6 +28,9 @@ class BookingController extends Controller
                 $bookings = $this->getBookingsByUser(Auth::id());
             }
             
+            // Apply filters (Car, Date, NIC)
+            $bookings = $this->applyFilters($bookings, $request);
+            
             return DataTables::of($bookings)
                 ->addIndexColumn()
                 ->addColumn('user_name', function($booking) {
@@ -52,199 +55,18 @@ class BookingController extends Controller
                     return $booking->getDurationInHours();
                 })
                 ->addColumn('status', function($booking) {
-                    $statusText = $this->getStatusText($booking->status);
-                    $statusClass = 'label-status label-' . $booking->status;
-                    return '<span class="' . $statusClass . '">' . $statusText . '</span>';
+                    return $this->getStatusBadgeHtml($booking->status);
                 })
                 ->addColumn('action', function($booking) {
-                    $actions = '<div class="action-buttons">';
-                    // ============================================
-                    // VIEW BUTTON - For Everyone
-                    // ============================================
-                    $actions .= '<a href="#" class="action-btn btn-info view-booking" 
-                                data-id="' . $booking->booking_id . '" 
-                                title="View Details">
-                                <span class="glyphicon glyphicon-eye-open"></span>
-                            </a>';
-                    
-                    // ============================================
-                    // FOR ADMIN/MANAGER - Status Dropdown
-                    // ============================================
-                    if ($this->hasBookingPermission()) {
-                        $actions .= $this->getStatusDropdown($booking);
-                    } 
-                    // ============================================
-                    // FOR REGULAR USERS - Edit/Cancel Buttons
-                    // ============================================
-                    else {
-                        $canEdit = $this->canEditBooking($booking);
-                        $canCancel = $this->canCancelBooking($booking);
-                        
-                        // Edit button
-                        if ($canEdit) {
-                            $actions .= '<a href="' . route('bookings.edit', $booking->booking_id) . '" 
-                                        class="action-btn btn-edit" 
-                                        title="Edit Booking">
-                                        <span class="glyphicon glyphicon-edit"></span>
-                                    </a> ';
-                        } else {
-                            $editReason = 'Cannot edit';
-                            if (!$booking->isPending()) {
-                                $editReason = 'Only pending bookings can be edited';
-                            } elseif (Carbon::parse($booking->rental_start_date)->lessThanOrEqualTo(Carbon::now())) {
-                                $editReason = 'Booking has already started';
-                            }
-                            $actions .= '<button class="action-btn btn-edit" disabled title="' . $editReason . '">
-                                        <span class="glyphicon glyphicon-edit"></span>
-                                    </button> ';
-                        }
-                        
-                        // Cancel button
-                        if ($canCancel) {
-                            $actions .= '<button class="action-btn btn-cancel cancel-booking" 
-                                        data-id="' . $booking->booking_id . '" 
-                                        data-ref="' . $booking->booking_ref_no . '"
-                                        title="Cancel Booking">
-                                        <span class="glyphicon glyphicon-remove"></span>
-                                    </button> ';
-                        } else {
-                            $cancelReason = 'Cannot cancel';
-                            if (!$booking->isPending()) {
-                                $cancelReason = 'Only pending bookings can be cancelled';
-                            } elseif (Carbon::parse($booking->rental_start_date)->lessThanOrEqualTo(Carbon::now())) {
-                                $cancelReason = 'Booking has already started';
-                            }
-                            $actions .= '<button class="action-btn btn-cancel" disabled title="' . $cancelReason . '">
-                                        <span class="glyphicon glyphicon-remove"></span>
-                                    </button> ';
-                        }
-                    }
-                    
-                    $actions .= '</div>';
-                    return $actions;
+                    return $this->getActionButtons($booking);
                 })
                 ->rawColumns(['status', 'action'])
                 ->make(true);
         }
 
-        return view('bookings.index');
-    }
-
-    /**
-     * Generate status dropdown for admin/manager
-     */
-    private function getStatusDropdown($booking)
-    {
-        $currentStatus = $booking->status;
-        
-        // Define allowed transitions (current -> next)
-        $allowedTransitions = [
-            'pending' => ['confirmed', 'cancelled'],
-            'confirmed' => ['active', 'cancelled'],
-            'active' => ['returned'],
-            'returned' => ['completed'],
-            'completed' => [], // No further transitions
-            'cancelled' => [] // No further transitions
-        ];
-        
-        // Get allowed next statuses
-        $allowedNext = $allowedTransitions[$currentStatus] ?? [];
-        
-        // If no allowed transitions, show the current status as disabled
-        if (empty($allowedNext)) {
-            return '<span class="label-status label-' . $currentStatus . '" style="font-size:11px; padding:4px 8px;">' 
-                    . $this->getStatusText($currentStatus) . ' (Final)</span> ';
-        }
-        
-        // Build the dropdown
-        $html = '<div class="status-dropdown-wrapper" style="display:inline-block; position:relative;">';
-        $html .= '<select class="form-control status-dropdown" data-booking-id="' . $booking->booking_id . '" 
-                    style="height:32px; padding:2px 20px 2px 8px; font-size:12px; border-radius:4px; min-width:110px; appearance:auto; border:1px solid #ccc; background-color:#fff; cursor:pointer;">';
-        
-        // Always show current status as selected (disabled)
-        $html .= '<option value="' . $currentStatus . '" selected disabled style="font-weight:bold; color:#555;">▼ ' 
-                . $this->getStatusText($currentStatus) . '</option>';
-        
-        // Add allowed next statuses
-        foreach ($allowedNext as $status) {
-            $html .= '<option value="' . $status . '" style="color:' . $this->getStatusColor($status) . ';">→ ' 
-                    . $this->getStatusText($status) . '</option>';
-        }
-        
-        $html .= '</select>';
-        $html .= '</div> ';
-        
-        return $html;
-    }
-
-    /**
-     * Get color for status (for dropdown options)
-     */
-    private function getStatusColor($status)
-    {
-        return match($status) {
-            'pending' => '#f0ad4e',
-            'confirmed' => '#5bc0de',
-            'active' => '#5cb85c',
-            'returned' => '#337ab7',
-            'completed' => '#2e6da4',
-            'cancelled' => '#d9534f',
-            default => '#666'
-        };
-    }
-
-    /**
-     * Update booking status from dropdown (Admin/Manager only)
-     */
-    public function updateStatusFromDropdown(Request $request, $id)
-    {
-        try {
-            $booking = $this->getBookingById($id);
-            $newStatus = $request->status;
-            
-            // Check if this transition is allowed
-            $allowedTransitions = [
-                'pending' => ['confirmed', 'cancelled'],
-                'confirmed' => ['active', 'cancelled'],
-                'active' => ['returned'],
-                'returned' => ['completed'],
-                'completed' => [],
-                'cancelled' => []
-            ];
-            
-            $allowedNext = $allowedTransitions[$booking->status] ?? [];
-            
-            if (!in_array($newStatus, $allowedNext)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid status transition. You cannot change from ' . $booking->status . ' to ' . $newStatus . '.'
-                ], 422);
-            }
-            
-            // Update the status
-            $booking->status = $newStatus;
-            $booking->save();
-            
-            $statusMessages = [
-                'confirmed' => 'Booking confirmed successfully!',
-                'active' => 'Car issued successfully!',
-                'returned' => 'Car returned successfully!',
-                'completed' => 'Booking completed successfully!',
-                'cancelled' => 'Booking cancelled successfully!',
-            ];
-            
-            return response()->json([
-                'success' => true,
-                'message' => $statusMessages[$newStatus] ?? 'Status updated successfully!',
-                'booking' => $booking
-            ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error updating status: ' . $e->getMessage()
-            ], 500);
-        }
+        // Pass cars for the filter dropdown
+        $cars = Car::with('model.brand')->where('id', '>', 0)->get();
+        return view('bookings.index', compact('cars'));
     }
 
     /**
@@ -365,6 +187,23 @@ class BookingController extends Controller
     }
 
     /**
+     * Update booking status from dropdown (Admin/Manager only)
+     */
+    public function updateStatusFromDropdown(Request $request, $id)
+    {
+        try {
+            $result = $this->updateBookingStatusWithValidation($id, $request->status);
+            return response()->json($result);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Update booking status (Admin/Manager only) - Legacy method
      */
     public function updateStatus(Request $request, $id)
@@ -429,7 +268,6 @@ class BookingController extends Controller
 
     /**
      * Get car bookings for calendar (AJAX)
-     * This returns ALL bookings for a car, regardless of user
      */
     public function getCarBookings(Request $request)
     {
@@ -440,24 +278,7 @@ class BookingController extends Controller
             return response()->json(['bookings' => []]);
         }
         
-        $query = Booking::where('car_id', $carId)
-            ->whereNotIn('status', ['cancelled']);
-        
-        if ($bookingId) {
-            $query->where('booking_id', '!=', $bookingId);
-        }
-        
-        $bookings = $query->select('booking_id', 'rental_start_date', 'rental_end_date', 'status')
-            ->get()
-            ->map(function($booking) {
-                return [
-                    'id' => $booking->booking_id,
-                    'rental_start_date' => $booking->rental_start_date,
-                    'rental_end_date' => $booking->rental_end_date,
-                    'status' => $booking->status,
-                    'status_label' => $this->getStatusText($booking->status)
-                ];
-            });
+        $bookings = $this->getCarBookingsForCalendar($carId, $bookingId);
         
         return response()->json([
             'bookings' => $bookings
@@ -490,9 +311,7 @@ class BookingController extends Controller
                     return $booking->car->number_plate ?? 'N/A';
                 })
                 ->addColumn('status', function($booking) {
-                    $statusText = $this->getStatusText($booking->status);
-                    $statusClass = 'label-status label-' . $booking->status;
-                    return '<span class="' . $statusClass . '">' . $statusText . '</span>';
+                    return $this->getStatusBadgeHtml($booking->status);
                 })
                 ->addColumn('duration', function($booking) {
                     return $booking->getDurationInHours() . ' hrs';

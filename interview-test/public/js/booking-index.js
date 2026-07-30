@@ -9,6 +9,12 @@ $(document).ready(function() {
         return $('meta[name="csrf-token"]').attr('content');
     }
 
+    // ===== Check if user is admin/manager =====
+    function isAdmin() {
+        var role = $('body').data('user-role') || '';
+        return role === 'admin' || role === 'manager';
+    }
+
     // ===== Initialize DataTable =====
     var table = $('#bookings-table').DataTable({
         processing: true,
@@ -16,7 +22,20 @@ $(document).ready(function() {
         ajax: {
             url: "/bookings",
             data: function (d) {
+                // Status filter - everyone
                 d.status = $('#status-filter').val();
+                
+                // Car filter - everyone
+                d.car_id = $('#car-filter').val();
+                
+                // Date filters - everyone
+                d.date_from = $('#date-from').val();
+                d.date_to = $('#date-to').val();
+                
+                // NIC filter - admin/manager only
+                if (isAdmin()) {
+                    d.nic = $('#nic-filter').val();
+                }
             },
             error: function(xhr, error, thrown) {
                 console.log('DataTable error:', error);
@@ -84,25 +103,56 @@ $(document).ready(function() {
             infoFiltered: "(filtered from _MAX_ total entries)",
             zeroRecords: "No matching bookings found"
         },
-        // Draw callback to initialize dropdowns after each draw
         drawCallback: function() {
             initializeStatusDropdowns();
         }
     });
 
-    // ===== Reload table when filters change =====
-    $(document).on('change', '#status-filter', function() {
+    // ============================================
+    // FILTER HANDLERS - ALL USERS
+    // ============================================
+
+    // Status filter change
+    $('#status-filter').on('change', function() {
         table.ajax.reload();
     });
 
-    // ===== Clear filters =====
-    $(document).on('click', '#clear-filters', function() {
-        $('#status-filter').val('').trigger('change');
+    // Car filter change
+    $('#car-filter').on('change', function() {
+        table.ajax.reload();
+    });
+
+    // Date from change
+    $('#date-from').on('change', function() {
+        table.ajax.reload();
+    });
+
+    // Date to change
+    $('#date-to').on('change', function() {
+        table.ajax.reload();
+    });
+
+    // NIC filter - admin/manager only (with debounce)
+    var nicTimeout;
+    $(document).on('keyup', '#nic-filter', function() {
+        clearTimeout(nicTimeout);
+        nicTimeout = setTimeout(function() {
+            table.ajax.reload();
+        }, 500);
+    });
+
+    // Clear all filters
+    $('#clear-filters').on('click', function() {
+        $('#status-filter').val('');
+        $('#car-filter').val('');
+        $('#date-from').val('');
+        $('#date-to').val('');
+        $('#nic-filter').val('');
         table.ajax.reload();
     });
 
     // ============================================
-    // INITIALIZE STATUS DROPDOWNS (Admin/Manager)
+    // STATUS DROPDOWNS (Admin/Manager)
     // ============================================
 
     function initializeStatusDropdowns() {

@@ -11,15 +11,64 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Translation\Translator;
 use Illuminate\Validation\Factory as ValidationFactory;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Request;
 
 trait BookingTrait
 {
+    // ============================================
+    // QUERY METHODS
+    // ============================================
+
     /**
      * Get all bookings with relationships
      */
     public function getAllBookings()
     {
         return Booking::with(['user', 'car'])->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Apply filters to bookings (Car and Date for all users, NIC for admin only)
+     */
+    public function applyFilters($query, $request)
+    {
+        // Filter by Car - ALL USERS
+        if ($request->filled('car_id')) {
+            $query->where('car_id', $request->car_id);
+        }
+
+        // Filter by Date Range (Start Date) - ALL USERS
+        if ($request->filled('date_from')) {
+            $query->whereDate('rental_start_date', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('rental_start_date', '<=', $request->date_to);
+        }
+
+        // Filter by NIC - ADMIN/MANAGER ONLY
+        if ($request->filled('nic') && $this->hasBookingPermission()) {
+            $query->whereHas('user', function($q) use ($request) {
+                $q->where('id_num', 'LIKE', '%' . $request->nic . '%');
+            });
+        }
+
+        // Status is handled by DataTables via 'status' parameter
+        return $query;
+    }
+
+    /**
+     * Get filtered bookings based on user role (legacy - kept for compatibility)
+     */
+    public function getFilteredBookings(Request $request)
+    {
+        if ($this->hasBookingPermission()) {
+            $bookings = $this->getAllBookings();
+            return $this->applyFilters($bookings, $request);
+        }
+        
+        $bookings = $this->getBookingsByUser(Auth::id());
+        return $this->applyFilters($bookings, $request);
     }
 
     /**
@@ -63,6 +112,35 @@ trait BookingTrait
     }
 
     /**
+     * Get car bookings for calendar
+     */
+    public function getCarBookingsForCalendar($carId, $bookingId = null)
+    {
+        $query = Booking::where('car_id', $carId)
+            ->whereNotIn('status', ['cancelled']);
+        
+        if ($bookingId) {
+            $query->where('booking_id', '!=', $bookingId);
+        }
+        
+        return $query->select('booking_id', 'rental_start_date', 'rental_end_date', 'status')
+            ->get()
+            ->map(function($booking) {
+                return [
+                    'id' => $booking->booking_id,
+                    'rental_start_date' => $booking->rental_start_date,
+                    'rental_end_date' => $booking->rental_end_date,
+                    'status' => $booking->status,
+                    'status_label' => $this->getStatusText($booking->status)
+                ];
+            });
+    }
+
+    // ============================================
+    // CRUD OPERATIONS
+    // ============================================
+
+    /**
      * Create a new booking
      */
     public function createBooking(array $data): array
@@ -88,13 +166,12 @@ trait BookingTrait
     }
 
     /**
-     * Update booking status
+     * Update booking status (legacy button method)
      */
     public function updateBookingStatus($id, string $action): array
     {
         $booking = $this->getBookingById($id);
         
-        // Define allowed transitions
         $allowedTransitions = [
             'confirm' => ['pending' => 'confirmed'],
             'issue' => ['confirmed' => 'active'],
@@ -132,18 +209,56 @@ trait BookingTrait
     }
 
     /**
+     * Update booking status with validation (for dropdown)
+     */
+    public function updateBookingStatusWithValidation($id, string $newStatus): array
+    {
+        $booking = $this->getBookingById($id);
+        
+        $allowedTransitions = [
+            'pending' => ['confirmed', 'cancelled'],
+            'confirmed' => ['active', 'cancelled'],
+            'active' => ['returned'],
+            'returned' => ['completed'],
+            'completed' => [],
+            'cancelled' => []
+        ];
+        
+        $allowedNext = $allowedTransitions[$booking->status] ?? [];
+        
+        if (!in_array($newStatus, $allowedNext)) {
+            throw new \Exception('Invalid status transition. You cannot change from ' . $booking->status . ' to ' . $newStatus . '.');
+        }
+        
+        $booking->status = $newStatus;
+        $booking->save();
+        
+        $statusMessages = [
+            'confirmed' => 'Booking confirmed successfully!',
+            'active' => 'Car issued successfully!',
+            'returned' => 'Car returned successfully!',
+            'completed' => 'Booking completed successfully!',
+            'cancelled' => 'Booking cancelled successfully!',
+        ];
+        
+        return [
+            'success' => true,
+            'message' => $statusMessages[$newStatus] ?? 'Status updated successfully!',
+            'booking' => $booking
+        ];
+    }
+
+    /**
      * Cancel a booking (only if pending and before start date)
      */
     public function cancelBooking($id): array
     {
         $booking = $this->getBookingById($id);
         
-        // Check if booking can be cancelled
         if (!$booking->isPending()) {
             throw new \Exception('Only pending bookings can be cancelled.');
         }
 
-        // Check if start date is in the future
         $now = Carbon::now();
         $startDate = Carbon::parse($booking->rental_start_date);
         
@@ -151,7 +266,6 @@ trait BookingTrait
             throw new \Exception('Cannot cancel a booking that has already started.');
         }
 
-        // Update status to cancelled
         $booking->status = 'cancelled';
         $booking->save();
 
@@ -160,6 +274,129 @@ trait BookingTrait
             'message' => 'Booking cancelled successfully!',
             'booking' => $booking
         ];
+    }
+
+    // ============================================
+    // VALIDATION METHODS
+    // ============================================
+
+    /**
+     * Validate booking data
+     */
+    public function validateBookingData(array $data, $excludeId = null)
+    {
+        $rules = [
+            'car_id' => ['required', 'exists:tbl_cars,id'],
+            'user_id' => ['nullable', 'exists:users,user_id'],
+            'rental_start_date' => ['required', 'date', 'after:now'],
+            'rental_end_date' => ['required', 'date', 'after:rental_start_date'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ];
+
+        $messages = [
+            'car_id.required' => 'Please select a car.',
+            'car_id.exists' => 'Selected car does not exist.',
+            'user_id.exists' => 'Selected user does not exist.',
+            'rental_start_date.required' => 'Please select rental start date.',
+            'rental_start_date.date' => 'Please enter a valid date.',
+            'rental_start_date.after' => 'Rental must start in the future.',
+            'rental_end_date.required' => 'Please select rental end date.',
+            'rental_end_date.date' => 'Please enter a valid date.',
+            'rental_end_date.after' => 'Rental end must be after start date.',
+            'notes.max' => 'Notes cannot exceed 500 characters.',
+        ];
+
+        if ($excludeId) {
+            $rules['rental_start_date'] = ['required', 'date'];
+            $rules['rental_end_date'] = ['required', 'date', 'after:rental_start_date'];
+        }
+
+        $validator = Validator::make($data, $rules, $messages);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $this->validateRentalDuration($data['rental_start_date'], $data['rental_end_date']);
+
+        return $validator->validated();
+    }
+
+    /**
+     * Validate booking update (with additional restrictions)
+     */
+    public function validateBookingUpdate(array $data, $bookingId)
+    {
+        $booking = $this->getBookingById($bookingId);
+        
+        if (!$booking->isPending()) {
+            throw new \Exception('Only pending bookings can be updated.');
+        }
+
+        $currentStartDate = Carbon::parse($booking->rental_start_date);
+        $now = Carbon::now();
+        
+        if ($currentStartDate->lessThanOrEqualTo($now)) {
+            throw new \Exception('Cannot update a booking that has already started or is in the past.');
+        }
+
+        $rules = [
+            'car_id' => ['required', 'exists:tbl_cars,id'],
+            'rental_start_date' => ['required', 'date', 'after:now'],
+            'rental_end_date' => ['required', 'date', 'after:rental_start_date'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ];
+
+        $messages = [
+            'car_id.required' => 'Please select a car.',
+            'car_id.exists' => 'Selected car does not exist.',
+            'rental_start_date.required' => 'Please select rental start date.',
+            'rental_start_date.date' => 'Please enter a valid date.',
+            'rental_start_date.after' => 'Rental must start in the future.',
+            'rental_end_date.required' => 'Please select rental end date.',
+            'rental_end_date.date' => 'Please enter a valid date.',
+            'rental_end_date.after' => 'Rental end must be after start date.',
+            'notes.max' => 'Notes cannot exceed 500 characters.',
+        ];
+
+        $validator = Validator::make($data, $rules, $messages);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $this->validateRentalDuration($data['rental_start_date'], $data['rental_end_date']);
+
+        return $validator->validated();
+    }
+
+    /**
+     * Validate the requested rental window.
+     */
+    public function validateRentalDuration($startDate, $endDate): void
+    {
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+
+        if ($end->lessThanOrEqualTo($start)) {
+            $this->throwValidationException([
+                'rental_end_date' => ['Rental end date must be after rental start date.'],
+            ]);
+        }
+
+        $durationInMinutes = $start->diffInMinutes($end, false);
+        if ($durationInMinutes < 120) {
+            $this->throwValidationException([
+                'rental_end_date' => ['Rental duration must be at least 2 hours.'],
+            ]);
+        }
+
+        $maxAllowedEnd = $start->copy()->addDays(30);
+        if ($end->greaterThan($maxAllowedEnd)) {
+            $this->throwValidationException([
+                'rental_end_date' => ['Rental duration cannot exceed 1 month.'],
+            ]);
+        }
     }
 
     /**
@@ -208,33 +445,267 @@ trait BookingTrait
     /**
      * Check if car is available (for AJAX)
      */
-public function isCarAvailable($carId, $startDate, $endDate, $excludeBookingId = null): bool
-{
-    if (!$carId || !$startDate || !$endDate) {
-        return false;
+    public function isCarAvailable($carId, $startDate, $endDate, $excludeBookingId = null): bool
+    {
+        if (!$carId || !$startDate || !$endDate) {
+            return false;
+        }
+
+        $start = Carbon::parse(trim($startDate));
+        $end = Carbon::parse(trim($endDate));
+
+        if ($end->lessThanOrEqualTo($start)) {
+            return false;
+        }
+
+        $query = Booking::where('car_id', $carId)
+            ->whereIn('status', ['pending', 'confirmed', 'active'])
+            ->where(function($q) use ($start, $end) {
+                $q->where('rental_start_date', '<', $end)
+                  ->where('rental_end_date', '>', $start);
+            });
+
+        if ($excludeBookingId) {
+            $query->where('booking_id', '!=', $excludeBookingId);
+        }
+
+        return !$query->exists();
     }
 
-    $start = Carbon::parse(trim($startDate));
-    $end = Carbon::parse(trim($endDate));
+    // ============================================
+    // UI HELPER METHODS
+    // ============================================
 
-    if ($end->lessThanOrEqualTo($start)) {
-        return false;
+    /**
+     * Generate status badge HTML
+     */
+    public function getStatusBadgeHtml(string $status): string
+    {
+        $statusText = $this->getStatusText($status);
+        $statusClass = 'label-status label-' . $status;
+        return '<span class="' . $statusClass . '">' . $statusText . '</span>';
     }
 
-    $query = Booking::where('car_id', $carId)
-        ->whereIn('status', ['pending', 'confirmed', 'active'])
-        ->where(function($q) use ($start, $end) {
-            $q->where('rental_start_date', '<', $end)
-              ->where('rental_end_date', '>', $start);
-        });
-
-    // Exclude current booking when editing
-    if ($excludeBookingId) {
-        $query->where('booking_id', '!=', $excludeBookingId);
+    /**
+     * Generate action buttons for booking
+     */
+    public function getActionButtons($booking): string
+    {
+        $actions = '<div class="action-buttons">';
+        
+        // View button
+        $actions .= '<a href="#" class="action-btn btn-info view-booking" 
+                    data-id="' . $booking->booking_id . '" 
+                    title="View Details">
+                    <span class="glyphicon glyphicon-eye-open"></span>
+                </a> ';
+        
+        // Admin/Manager: Status Dropdown
+        if ($this->hasBookingPermission()) {
+            $actions .= $this->getStatusDropdown($booking);
+        } 
+        // Regular User: Edit/Cancel Buttons
+        else {
+            $canEdit = $this->canEditBooking($booking);
+            $canCancel = $this->canCancelBooking($booking);
+            
+            // Edit button
+            if ($canEdit) {
+                $actions .= '<a href="' . route('bookings.edit', $booking->booking_id) . '" 
+                            class="action-btn btn-edit" 
+                            title="Edit Booking">
+                            <span class="glyphicon glyphicon-edit"></span>
+                        </a> ';
+            } else {
+                $editReason = $this->getEditDisabledReason($booking);
+                $actions .= '<button class="action-btn btn-edit" disabled title="' . $editReason . '">
+                            <span class="glyphicon glyphicon-edit"></span>
+                        </button> ';
+            }
+            
+            // Cancel button
+            if ($canCancel) {
+                $actions .= '<button class="action-btn btn-cancel cancel-booking" 
+                            data-id="' . $booking->booking_id . '" 
+                            data-ref="' . $booking->booking_ref_no . '"
+                            title="Cancel Booking">
+                            <span class="glyphicon glyphicon-remove"></span>
+                        </button> ';
+            } else {
+                $cancelReason = $this->getCancelDisabledReason($booking);
+                $actions .= '<button class="action-btn btn-cancel" disabled title="' . $cancelReason . '">
+                            <span class="glyphicon glyphicon-remove"></span>
+                        </button> ';
+            }
+        }
+        
+        $actions .= '</div>';
+        return $actions;
     }
 
-    return !$query->exists();
-}
+    /**
+     * Generate status dropdown for admin/manager
+     */
+    public function getStatusDropdown($booking): string
+    {
+        $currentStatus = $booking->status;
+        
+        $allowedTransitions = [
+            'pending' => ['confirmed', 'cancelled'],
+            'confirmed' => ['active', 'cancelled'],
+            'active' => ['returned'],
+            'returned' => ['completed'],
+            'completed' => [],
+            'cancelled' => []
+        ];
+        
+        $allowedNext = $allowedTransitions[$currentStatus] ?? [];
+        
+        if (empty($allowedNext)) {
+            return '<span class="label-status label-' . $currentStatus . '" style="font-size:11px; padding:4px 8px;">' 
+                    . $this->getStatusText($currentStatus) . ' (Final)</span> ';
+        }
+        
+        $html = '<div class="status-dropdown-wrapper" style="display:inline-block; position:relative;">';
+        $html .= '<select class="form-control status-dropdown" data-booking-id="' . $booking->booking_id . '" 
+                    style="height:32px; padding:2px 20px 2px 8px; font-size:12px; border-radius:4px; min-width:110px; appearance:auto; border:1px solid #ccc; background-color:#fff; cursor:pointer;">';
+        
+        $html .= '<option value="' . $currentStatus . '" selected disabled style="font-weight:bold; color:#555;">▼ ' 
+                . $this->getStatusText($currentStatus) . '</option>';
+        
+        foreach ($allowedNext as $status) {
+            $html .= '<option value="' . $status . '" style="color:' . $this->getStatusColor($status) . ';">→ ' 
+                    . $this->getStatusText($status) . '</option>';
+        }
+        
+        $html .= '</select>';
+        $html .= '</div> ';
+        
+        return $html;
+    }
+
+    /**
+     * Get color for status (for dropdown options)
+     */
+    public function getStatusColor($status): string
+    {
+        return match($status) {
+            'pending' => '#f0ad4e',
+            'confirmed' => '#5bc0de',
+            'active' => '#5cb85c',
+            'returned' => '#337ab7',
+            'completed' => '#2e6da4',
+            'cancelled' => '#d9534f',
+            default => '#666'
+        };
+    }
+
+    /**
+     * Get reason why edit is disabled
+     */
+    public function getEditDisabledReason($booking): string
+    {
+        if (!$booking->isPending()) {
+            return 'Only pending bookings can be edited';
+        }
+        if (Carbon::parse($booking->rental_start_date)->lessThanOrEqualTo(Carbon::now())) {
+            return 'Booking has already started';
+        }
+        return 'Cannot edit';
+    }
+
+    /**
+     * Get reason why cancel is disabled
+     */
+    public function getCancelDisabledReason($booking): string
+    {
+        if (!$booking->isPending()) {
+            return 'Only pending bookings can be cancelled';
+        }
+        if (Carbon::parse($booking->rental_start_date)->lessThanOrEqualTo(Carbon::now())) {
+            return 'Booking has already started';
+        }
+        return 'Cannot cancel';
+    }
+
+    // ============================================
+    // PERMISSION METHODS
+    // ============================================
+
+    /**
+     * Check if user has permission to manage bookings
+     */
+    public function hasBookingPermission(): bool
+    {
+        if (!Auth::check()) {
+            return false;
+        }
+        return in_array(Auth::user()->role, ['admin', 'manager']);
+    }
+
+    /**
+     * Check if user can edit the booking
+     */
+    public function canEditBooking($booking): bool
+    {
+        if (!$booking) return false;
+        if (!$booking->isPending()) return false;
+        if (!Auth::check()) return false;
+        if ((int) Auth::id() !== (int) $booking->user_id) return false;
+        
+        $now = Carbon::now();
+        $startDate = Carbon::parse($booking->rental_start_date);
+        if ($startDate->lessThanOrEqualTo($now)) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Check if user can cancel the booking
+     */
+    public function canCancelBooking($booking): bool
+    {
+        if (!$booking) return false;
+        if (!$booking->isPending()) return false;
+        if (!Auth::check()) return false;
+        if ((int) Auth::id() !== (int) $booking->user_id) return false;
+        
+        $now = Carbon::now();
+        $startDate = Carbon::parse($booking->rental_start_date);
+        if ($startDate->lessThanOrEqualTo($now)) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    // ============================================
+    // HELPER METHODS
+    // ============================================
+
+    /**
+     * Calculate the rental duration in hours.
+     */
+    public function getRentalDurationInHours($startDate, $endDate): int
+    {
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+        return (int) $start->diffInHours($end);
+    }
+
+    /**
+     * Generate unique booking reference
+     */
+    public function generateBookingReference(): string
+    {
+        do {
+            $refNo = 'BK' . date('ymd') . rand(1000, 9999);
+        } while ($this->getBookingByRef($refNo));
+        
+        return $refNo;
+    }
 
     /**
      * Get booking statistics
@@ -273,202 +744,6 @@ public function isCarAvailable($carId, $startDate, $endDate, $excludeBookingId =
     }
 
     /**
-     * Generate unique booking reference
-     */
-    public function generateBookingReference(): string
-    {
-        do {
-            $refNo = 'BK' . date('ymd') . rand(1000, 9999);
-        } while ($this->getBookingByRef($refNo));
-        
-        return $refNo;
-    }
-
-    /**
-     * Validate booking data
-     */
-    public function validateBookingData(array $data, $excludeId = null)
-    {
-        $rules = [
-            'car_id' => ['required', 'exists:tbl_cars,id'],
-            'user_id' => ['nullable', 'exists:users,user_id'],
-            'rental_start_date' => ['required', 'date', 'after:now'],
-            'rental_end_date' => ['required', 'date', 'after:rental_start_date'],
-            'notes' => ['nullable', 'string', 'max:500'],
-        ];
-
-        $messages = [
-            'car_id.required' => 'Please select a car.',
-            'car_id.exists' => 'Selected car does not exist.',
-            'user_id.exists' => 'Selected user does not exist.',
-            'rental_start_date.required' => 'Please select rental start date.',
-            'rental_start_date.date' => 'Please enter a valid date.',
-            'rental_start_date.after' => 'Rental must start in the future.',
-            'rental_end_date.required' => 'Please select rental end date.',
-            'rental_end_date.date' => 'Please enter a valid date.',
-            'rental_end_date.after' => 'Rental end must be after start date.',
-            'notes.max' => 'Notes cannot exceed 500 characters.',
-        ];
-
-        // For updates, we need different validation rules
-        if ($excludeId) {
-            $rules['rental_start_date'] = ['required', 'date'];
-            $rules['rental_end_date'] = ['required', 'date', 'after:rental_start_date'];
-        }
-
-        $validator = Validator::make($data, $rules, $messages);
-
-        if ($validator->fails()) {
-            throw new ValidationException($validator);
-        }
-
-        $this->validateRentalDuration($data['rental_start_date'], $data['rental_end_date']);
-
-        return $validator->validated();
-    }
-
-    /**
-     * Validate booking update (with additional restrictions)
-     */
-    public function validateBookingUpdate(array $data, $bookingId)
-    {
-        $booking = $this->getBookingById($bookingId);
-        
-        // Only pending bookings can be updated
-        if (!$booking->isPending()) {
-            throw new \Exception('Only pending bookings can be updated.');
-        }
-
-        // Check if start date is already passed
-        $currentStartDate = Carbon::parse($booking->rental_start_date);
-        $now = Carbon::now();
-        
-        if ($currentStartDate->lessThanOrEqualTo($now)) {
-            throw new \Exception('Cannot update a booking that has already started or is in the past.');
-        }
-
-        // Validate the data
-        $rules = [
-            'car_id' => ['required', 'exists:tbl_cars,id'],
-            'rental_start_date' => ['required', 'date', 'after:now'],
-            'rental_end_date' => ['required', 'date', 'after:rental_start_date'],
-            'notes' => ['nullable', 'string', 'max:500'],
-        ];
-
-        $messages = [
-            'car_id.required' => 'Please select a car.',
-            'car_id.exists' => 'Selected car does not exist.',
-            'rental_start_date.required' => 'Please select rental start date.',
-            'rental_start_date.date' => 'Please enter a valid date.',
-            'rental_start_date.after' => 'Rental must start in the future.',
-            'rental_end_date.required' => 'Please select rental end date.',
-            'rental_end_date.date' => 'Please enter a valid date.',
-            'rental_end_date.after' => 'Rental end must be after start date.',
-            'notes.max' => 'Notes cannot exceed 500 characters.',
-        ];
-
-        $validator = Validator::make($data, $rules, $messages);
-
-        if ($validator->fails()) {
-            throw new ValidationException($validator);
-        }
-
-        // Check duration
-        $this->validateRentalDuration($data['rental_start_date'], $data['rental_end_date']);
-
-        return $validator->validated();
-    }
-
-    /**
-     * Calculate the rental duration in hours.
-     */
-    public function getRentalDurationInHours($startDate, $endDate): int
-    {
-        $start = Carbon::parse($startDate);
-        $end = Carbon::parse($endDate);
-
-        return (int) $start->diffInHours($end);
-    }
-
-    /**
-     * Validate the requested rental window.
-     */
-    public function validateRentalDuration($startDate, $endDate): void
-    {
-        $start = Carbon::parse($startDate);
-        $end = Carbon::parse($endDate);
-
-        if ($end->lessThanOrEqualTo($start)) {
-            $this->throwValidationException([
-                'rental_end_date' => ['Rental end date must be after rental start date.'],
-            ]);
-        }
-
-        $durationInMinutes = $start->diffInMinutes($end, false);
-        if ($durationInMinutes < 120) {
-            $this->throwValidationException([
-                'rental_end_date' => ['Rental duration must be at least 2 hours.'],
-            ]);
-        }
-
-        $maxAllowedEnd = $start->copy()->addDays(30);
-        if ($end->greaterThan($maxAllowedEnd)) {
-            $this->throwValidationException([
-                'rental_end_date' => ['Rental duration cannot exceed 1 month.'],
-            ]);
-        }
-    }
-
-    protected function throwValidationException(array $messages): void
-    {
-        $validator = $this->getValidationFactory()->make([], []);
-
-        foreach ($messages as $key => $value) {
-            foreach (Arr::wrap($value) as $message) {
-                $validator->errors()->add($key, $message);
-            }
-        }
-
-        throw new ValidationException($validator);
-    }
-
-    protected function getValidationFactory(): ValidationFactory
-    {
-        if (function_exists('app') && app()->bound('validator')) {
-            return app('validator');
-        }
-
-        return new ValidationFactory(new Translator(new \Illuminate\Translation\ArrayLoader, 'en'));
-    }
-
-    /**
-     * Check if user has permission to manage bookings
-     */
-    public function hasBookingPermission(): bool
-    {
-        if (!Auth::check()) {
-            return false;
-        }
-        return in_array(Auth::user()->role, ['admin', 'manager']);
-    }
-
-    /**
-     * Get booking status badge class
-     */
-    public function getStatusBadge(string $status): string
-    {
-        return match($status) {
-            'pending' => 'label label-warning',
-            'confirmed' => 'label label-info',
-            'active' => 'label label-success',
-            'returned' => 'label label-primary',
-            'completed' => 'label label-success',
-            'cancelled' => 'label label-danger',
-            default => 'label label-default'
-        };
-    }
-
-    /**
      * Get booking status text
      */
     public function getStatusText(string $status): string
@@ -485,7 +760,23 @@ public function isCarAvailable($carId, $startDate, $endDate, $excludeBookingId =
     }
 
     /**
-     * Get allowed status transitions
+     * Get booking status badge class (legacy - kept for compatibility)
+     */
+    public function getStatusBadge(string $status): string
+    {
+        return match($status) {
+            'pending' => 'label label-warning',
+            'confirmed' => 'label label-info',
+            'active' => 'label label-success',
+            'returned' => 'label label-primary',
+            'completed' => 'label label-success',
+            'cancelled' => 'label label-danger',
+            default => 'label label-default'
+        };
+    }
+
+    /**
+     * Get allowed status transitions (legacy - kept for compatibility)
      */
     public function getAllowedTransitions(): array
     {
@@ -499,7 +790,7 @@ public function isCarAvailable($carId, $startDate, $endDate, $excludeBookingId =
     }
 
     /**
-     * Get allowed actions for a booking status
+     * Get allowed actions for a booking status (legacy - kept for compatibility)
      */
     public function getAllowedActions(string $status): array
     {
@@ -554,57 +845,6 @@ public function isCarAvailable($carId, $startDate, $endDate, $excludeBookingId =
     }
 
     /**
-     * Check if user can edit the booking
-     */
-    public function canEditBooking($booking): bool
-    {
-        if (!$booking) return false;
-        
-        // Only pending bookings can be edited
-        if (!$booking->isPending()) return false;
-        
-        // User must own the booking
-        if (!Auth::check()) return false;
-
-        $authenticatedUserId = (int) Auth::id();
-        $bookingOwnerId = (int) $booking->user_id;
-        if ($authenticatedUserId !== $bookingOwnerId) return false;
-
-        // Check if start date is in the future
-        $now = Carbon::now();
-        $startDate = Carbon::parse($booking->rental_start_date);
-        if ($startDate->lessThanOrEqualTo($now)) {
-            return false;
-        }
-        
-        return true;
-    }
-
-   /**
- * Check if user can cancel the booking
- */
-public function canCancelBooking($booking): bool
-{
-    if (!$booking) return false;
-    
-    // Only pending bookings can be cancelled
-    if (!$booking->isPending()) return false;
-    
-    // User must be logged in
-    if (!Auth::check()) return false;
-
-    // Check if start date is in the future
-    $now = Carbon::now();
-    $startDate = Carbon::parse($booking->rental_start_date);
-    if ($startDate->lessThanOrEqualTo($now)) {
-        return false;
-    }
-    
-    return true;
-}
-      
-
-    /**
      * Get the edit route for a booking
      */
     public function getEditRoute($booking): string
@@ -618,5 +858,31 @@ public function canCancelBooking($booking): bool
     public function getCancelRoute($booking): string
     {
         return route('bookings.cancel', $booking->booking_id);
+    }
+
+    // ============================================
+    // EXCEPTION HELPERS
+    // ============================================
+
+    protected function throwValidationException(array $messages): void
+    {
+        $validator = $this->getValidationFactory()->make([], []);
+
+        foreach ($messages as $key => $value) {
+            foreach (Arr::wrap($value) as $message) {
+                $validator->errors()->add($key, $message);
+            }
+        }
+
+        throw new ValidationException($validator);
+    }
+
+    protected function getValidationFactory(): ValidationFactory
+    {
+        if (function_exists('app') && app()->bound('validator')) {
+            return app('validator');
+        }
+
+        return new ValidationFactory(new Translator(new \Illuminate\Translation\ArrayLoader, 'en'));
     }
 }

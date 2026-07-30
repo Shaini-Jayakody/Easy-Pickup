@@ -15,8 +15,9 @@
             <div class="panel-body">
                 <!-- Filters -->
                 <div class="row" style="margin-bottom: 15px;">
-                    <div class="col-md-3">
-                        <label for="status-filter">Filter by Status:</label>
+                    <!-- Status Filter - Everyone -->
+                    <div class="col-md-2">
+                        <label for="status-filter">Status:</label>
                         <select id="status-filter" class="form-control">
                             <option value="">All Statuses</option>
                             <option value="pending">Pending</option>
@@ -27,28 +28,67 @@
                             <option value="cancelled">Cancelled</option>
                         </select>
                     </div>
+                    
+                    <!-- Car Filter - ALL USERS -->
+                    <div class="col-md-2">
+                        <label for="car-filter">Car:</label>
+                        <select id="car-filter" class="form-control">
+                            <option value="">All Cars</option>
+                            @foreach($cars ?? [] as $car)
+                                <option value="{{ $car->id }}">{{ $car->name }} - {{ $car->number_plate }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <!-- Date From Filter - ALL USERS -->
+                    <div class="col-md-2">
+                        <label for="date-from">Date From:</label>
+                        <input type="date" id="date-from" class="form-control">
+                    </div>
+                    
+                    <!-- Date To Filter - ALL USERS -->
+                    <div class="col-md-2">
+                        <label for="date-to">Date To:</label>
+                        <input type="date" id="date-to" class="form-control">
+                    </div>
+                    
+                    <!-- NIC Filter - Admin/Manager Only -->
+                    @if(auth()->user() && in_array(auth()->user()->role, ['admin', 'manager']))
+                    <div class="col-md-2">
+                        <label for="nic-filter">NIC:</label>
+                        <input type="text" id="nic-filter" class="form-control" placeholder="Search by NIC...">
+                    </div>
+                    @endif
+                    
+                    <!-- Clear Filters Button -->
+                    <div class="col-md-2">
+                        <label>&nbsp;</label>
+                        <button id="clear-filters" class="btn btn-default form-control">Clear Filters</button>
+                    </div>
                 </div>
 
-                <table class="table table-bordered table-striped" id="bookings-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Booking Ref</th>
-                            <th>Customer</th>
-                            <th>NIC</th>
-                            <th>Car</th>
-                            <th>Plate No</th>
-                            <th>Start Date</th>
-                            <th>End Date</th>
-                            <th>Duration</th>
-                            <th>Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- DataTables will populate -->
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped" id="bookings-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Booking Ref</th>
+                                <th>Customer</th>
+                                <th>NIC</th>
+                                <th>Car</th>
+                                <th>Plate No</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- DataTables will populate -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
