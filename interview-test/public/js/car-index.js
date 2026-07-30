@@ -6,12 +6,12 @@
 $(document).ready(function() {
     console.log('Car index script loaded!');
 
-    // ===== Get CSRF Token =====
+    // Get CSRF Token
     function getCsrfToken() {
         return $('meta[name="csrf-token"]').attr('content');
     }
 
-    // ===== Check if user is admin/manager =====
+    // Check if user is admin/manager
     function isAdminUser() {
         return typeof isAdmin !== 'undefined' && isAdmin === true;
     }
@@ -20,7 +20,7 @@ $(document).ready(function() {
         return typeof isAuthenticatedUser !== 'undefined' && isAuthenticatedUser === true;
     }
 
-    // ===== Get columns based on user role =====
+    // Get columns based on user role
     function getColumns() {
         var columns = [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
@@ -65,7 +65,7 @@ $(document).ready(function() {
         return columns;
     }
 
-    // ===== Initialize DataTable =====
+    //  Initialize DataTable 
     var table = $('#cars-table').DataTable({
         processing: true,
         serverSide: true,
@@ -92,7 +92,7 @@ $(document).ready(function() {
         }
     });
 
-    // ===== Reload table if brand filter changes =====
+    //Reload table if brand filter changes 
     $('#brand-filter').on('change', function() {
         table.ajax.reload();
     });
@@ -100,7 +100,7 @@ $(document).ready(function() {
 
     // DELETE FUNCTIONALITY
 
-    // ===== Get SweetAlert instance =====
+    //Get SweetAlert instance 
     function getSwal() {
         if (typeof Swal !== 'undefined') {
             return Swal;
@@ -115,7 +115,7 @@ $(document).ready(function() {
         return getSwal() !== null;
     }
 
-  // ===== Delete Car Handler=====
+  // Delete Car Handler
 $(document).on('click', '.delete-car', function(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -165,7 +165,7 @@ $(document).on('click', '.delete-car', function(e) {
         }
     }
 });
-    // ===== Delete Car AJAX Request =====
+    //  Delete Car AJAX Request 
     function deleteCar(carId, $button) {
         console.log('Deleting car ID:', carId);
         

@@ -199,9 +199,9 @@ $(document).ready(function() {
         }
     }
 
-    // ============================================
+   
     // EVENT HANDLERS
-    // ============================================
+    
     $('#booking_id').on('change', function() {
         updateBookingDetails();
         updateSubmitButton();
@@ -235,9 +235,9 @@ $(document).ready(function() {
         $('#fine-panel').toggle();
     });
 
-    // ============================================
+  
     // SET DEFAULT RETURNED DATE
-    // ============================================
+
     const now = new Date();
     const defaultDateTime = now.getFullYear() + '-' + 
         String(now.getMonth() + 1).padStart(2, '0') + '-' + 
@@ -248,17 +248,16 @@ $(document).ready(function() {
     $('#returned_date').removeAttr('max');
     $('#returned_date').val(defaultDateTime);
 
-    // ============================================
+
     // AUTO-LOAD BOOKING IF ID IS PASSED
-    // ============================================
+ 
     if (window.selectedBookingId) {
         console.log('Pre-selecting booking ID:', window.selectedBookingId);
         $('#booking_id').val(window.selectedBookingId).trigger('change');
     }
 
-    // ============================================
     // FORM SUBMIT
-    // ============================================
+   
     $('#invoice-form').on('submit', function(e) {
         e.preventDefault();
         
@@ -360,9 +359,9 @@ $(document).ready(function() {
         });
     });
 
-    // ============================================
+   
     // INITIAL SETUP
-    // ============================================
+   
     $('#invoice-preview').show();
     $('#preview-expected-hours').text('0');
     $('#preview-actual-hours').text('0');

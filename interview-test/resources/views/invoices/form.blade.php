@@ -61,9 +61,8 @@
                         <span class="help-block text-danger error-msg" id="booking_id-error"></span>
                     </div>
 
-                    <!-- ============================================ -->
+            
                     <!-- CUSTOMER DETAILS - Hidden by default -->
-                    <!-- ============================================ -->
                     <div class="panel panel-default invoice-panel" id="customer-details-panel" style="display:none;">
                         <div class="panel-heading">
                             <h4 class="panel-title">Customer Details</h4>
@@ -100,9 +99,8 @@
                         </div>
                     </div>
 
-                    <!-- ============================================ -->
+                   
                     <!-- CAR DETAILS - Hidden by default -->
-                    <!-- ============================================ -->
                     <div class="panel panel-default invoice-panel" id="car-details-panel" style="display:none;">
                         <div class="panel-heading">
                             <h4 class="panel-title">Car Details</h4>
@@ -159,18 +157,15 @@
                         </div>
                     </div>
 
-                    <!-- ============================================ -->
                     <!-- RETURNED DATE - Input -->
-                    <!-- ============================================ -->
                     <div class="form-group">
                         <label for="returned_date">Returned Date & Time <span class="text-danger">*</span></label>
                         <input type="datetime-local" class="form-control" name="returned_date" id="returned_date" required>
                         <span class="help-block text-danger error-msg" id="returned_date-error"></span>
                     </div>
 
-                    <!-- ============================================ -->
-                    <!-- INVOICE PREVIEW - Hidden by default -->
-                    <!-- ============================================ -->
+                
+                    <!-- INVOICE PREVIEW - Hidden by default -->+
                     <div id="invoice-preview" class="invoice-preview-container" style="display:none;">
                         <div class="panel panel-info">
                             <div class="panel-heading">
@@ -238,18 +233,15 @@
                         </div>
                     </div>
 
-                    <!-- ============================================ -->
                     <!-- ADDITIONAL CHARGES / FINE - Button to show -->
-                    <!-- ============================================ -->
                     <div class="form-group" style="margin-top:15px;">
                         <button type="button" class="btn btn-warning btn-sm" id="show-fine-btn">
                             <span class="glyphicon glyphicon-plus"></span> Add Additional Charges / Fine
                         </button>
                     </div>
 
-                    <!-- ============================================ -->
+                    
                     <!-- ADDITIONAL CHARGES / FINE - Hidden by default -->
-                    <!-- ============================================ -->
                     <div class="panel panel-warning fine-panel" id="fine-panel" style="display:none;">
                         <div class="panel-heading">
                             <h4 class="panel-title">
@@ -280,9 +272,8 @@
                         </div>
                     </div>
 
-                    <!-- ============================================ -->
+            
                     <!-- PAYMENT DETAILS -->
-                    <!-- ============================================ -->
                     <div class="form-group">
                         <label for="payment_method">Payment Method <span class="text-danger">*</span></label>
                         <select class="form-control" name="payment_method" id="payment_method" required>
@@ -300,9 +291,8 @@
                         <span class="help-block text-danger error-msg" id="notes-error"></span>
                     </div>
 
-                    <!-- ============================================ -->
+                    
                     <!-- FORM ACTIONS -->
-                    <!-- ============================================ -->
                     <div class="form-group invoice-form-actions">
                         <a href="{{ route('invoices.index') }}" class="btn btn-default">Cancel</a>
                         <button type="submit" class="btn btn-success pull-right" id="submit-btn" disabled>

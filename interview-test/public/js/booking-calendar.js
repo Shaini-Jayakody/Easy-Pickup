@@ -325,7 +325,6 @@ class BookingCalendar {
         const container = document.getElementById(this.containerId);
         if (!container) return;
         
-        // No additional highlighting needed - already handled in render
     }
 
     attachEventListeners() {

@@ -6,7 +6,7 @@
 var CarValidation = (function() {
     'use strict';
 
-    // ===== Validation Rules =====
+    // Validation Rules
     var rules = {
         car_brand: {
             required: true,
@@ -91,7 +91,7 @@ var CarValidation = (function() {
         }
     };
 
-    // ===== Field Validators =====
+    // Field Validators 
     var validators = {
         required: function(value) {
             return value !== '' && value !== null && value !== undefined;
@@ -116,7 +116,7 @@ var CarValidation = (function() {
         }
     };
 
-    // ===== Field Names =====
+    //Field Names
     var fieldNames = {
         car_brand: 'Brand',
         car_model: 'Model',
@@ -129,7 +129,7 @@ var CarValidation = (function() {
         car_trans: 'Transmission'
     };
 
-    // ===== Get Car ID for Update Mode =====
+    // Get Car ID for Update Mode
     function getCarId() {
         var carId = $('#car_id').val();
         return carId && carId !== '' ? carId : null;
@@ -139,7 +139,7 @@ var CarValidation = (function() {
         return getCarId() !== null;
     }
 
-    // ===== Main Validation Function =====
+    // Main Validation Function
     function validateField(fieldName, value, $input, $error) {
         var rule = rules[fieldName];
         if (!rule) return true;
@@ -251,7 +251,7 @@ function checkUniqueness(fieldName, value, $input, $error, url) {
     });
     return result;
 }
-    // ===== UI Helpers =====
+    //UI Helpers
     function showError($input, $error, message) {
         $error.text(message).show();
         $input.removeClass('is-valid').addClass('is-invalid');

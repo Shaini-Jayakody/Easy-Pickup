@@ -63,8 +63,7 @@
             <ul class="dropdown-menu">
                 <li><a href="{{ route('car.brands.index') }}"><span class="glyphicon glyphicon-tag"></span> Car Brands</a></li>
                 <li><a href="{{ route('car.models.index') }}"><span class="glyphicon glyphicon-list-alt"></span> Car Models</a></li>
-                <li role="separator" class="divider"></li>
-                <li><a href="#"><span class="glyphicon glyphicon-stats"></span> Reports</a></li>
+                
             </ul>
         </li>
     @endif
@@ -92,12 +91,7 @@
                                 <br>
                                 <small class="text-muted">{{ Auth::user()->email }}</small>
                             </li>
-                            <li role="separator" class="divider"></li>
-                            <li class="{{ request()->routeIs('profile.edit') ? 'active' : '' }}">
-                                <a href="{{ route('profile.edit') }}">
-                                    <span class="glyphicon glyphicon-user"></span> My Profile
-                                </a>
-                            </li>
+                            
                             <li role="separator" class="divider"></li>
                             <li>
                                 <a href="{{ route('logout') }}" 

@@ -4,18 +4,18 @@
  */
 
 $(document).ready(function() {
-    // ===== Get CSRF Token =====
+    //Get CSRF Token
     function getCsrfToken() {
         return $('meta[name="csrf-token"]').attr('content');
     }
 
-    // ===== Check if user is admin/manager =====
+    //Check if user is admin/manager 
     function isAdmin() {
         var role = $('body').data('user-role') || '';
         return role === 'admin' || role === 'manager';
     }
 
-    // ===== Initialize DataTable =====
+    //Initialize DataTable 
     var table = $('#invoices-table').DataTable({
         processing: true,
         serverSide: true,
@@ -102,10 +102,9 @@ $(document).ready(function() {
         }
     });
 
-    // ============================================
+  
     // FILTER HANDLERS
-    // ============================================
-
+   
     $('#status-filter, #method-filter, #car-filter, #date-from, #date-to').on('change', function() {
         table.ajax.reload();
     });
@@ -140,9 +139,8 @@ $(document).ready(function() {
         table.ajax.reload();
     });
 
-    // ============================================
     // INVOICE STATUS DROPDOWNS (Admin/Manager)
-    // ============================================
+
 
     function initializeStatusDropdowns() {
         $('.invoice-status-dropdown').off('change').on('change', function() {
@@ -225,10 +223,8 @@ $(document).ready(function() {
         });
     }
 
-    // ============================================
     // VIEW INVOICE DETAILS
-    // ============================================
-
+   
     $(document).on('click', '.view-invoice', function(e) {
         e.preventDefault();
         var id = $(this).data('id');
@@ -297,9 +293,9 @@ $(document).ready(function() {
         });
     });
 
-    // ============================================
+    
     // PRINT INVOICE
-    // ============================================
+
 
     $(document).on('click', '.print-invoice', function(e) {
         e.preventDefault();
@@ -307,9 +303,9 @@ $(document).ready(function() {
         window.open('/invoices/' + id + '/print', '_blank');
     });
 
-    // ============================================
+
     // HELPER FUNCTIONS
-    // ============================================
+    
 
     function getSwal() {
         if (typeof Swal !== 'undefined') {

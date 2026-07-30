@@ -6,12 +6,12 @@
 $(document).ready(function() {
     console.log('Model index script loaded!');
 
-    // ===== Get CSRF Token =====
+    // Get CSRF Token
     function getCsrfToken() {
         return $('meta[name="csrf-token"]').attr('content');
     }
 
-    // ===== Filter by Brand =====
+    // Filter by Brand
     $('#brand-filter').on('change', function() {
         var brandId = $(this).val();
         $('#models-table-body tr').each(function() {
@@ -23,7 +23,7 @@ $(document).ready(function() {
         });
     });
 
-    // ===== Delete Model =====
+    //  Delete Model 
     $(document).on('click', '.delete-model', function(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -41,7 +41,7 @@ $(document).ready(function() {
             
             $.ajax({
                 url: '/car/models/' + id + '/delete',
-                type: 'DELETE',  // ✅ Use DELETE directly
+                type: 'DELETE', 
                 data: {
                     _token: getCsrfToken()
                 },
@@ -85,7 +85,7 @@ $(document).ready(function() {
         }
     });
 
-    // ===== Get SweetAlert instance =====
+    //Get SweetAlert instance
     function getSwal() {
         if (typeof Swal !== 'undefined') {
             return Swal;

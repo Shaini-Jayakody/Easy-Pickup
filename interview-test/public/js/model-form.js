@@ -6,12 +6,12 @@
 $(document).ready(function() {
     console.log('Model form script loaded!');
 
-    // ===== Get CSRF Token =====
+    //Get CSRF Token
     function getCsrfToken() {
         return $('meta[name="csrf-token"]').attr('content');
     }
 
-    // ===== Submit Model Form =====
+    // Submit Model Form
     $('#model-form').on('submit', function(e) {
         e.preventDefault();
         

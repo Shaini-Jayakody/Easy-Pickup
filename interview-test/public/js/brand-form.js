@@ -6,12 +6,12 @@
 $(document).ready(function() {
     console.log('Brand form script loaded!');
 
-    // ===== Get CSRF Token =====
+    // Get CSRF Token 
     function getCsrfToken() {
         return $('meta[name="csrf-token"]').attr('content');
     }
 
-    // ===== Submit Brand Form =====
+    // Submit Brand Form
     $('#brand-form').on('submit', function(e) {
         e.preventDefault();
         
@@ -95,7 +95,7 @@ $(document).ready(function() {
         });
     });
 
-    // ===== Get SweetAlert instance =====
+    // Get SweetAlert instance 
     function getSwal() {
         if (typeof Swal !== 'undefined') {
             return Swal;

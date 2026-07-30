@@ -5,19 +5,19 @@
 $(document).ready(function() {
     console.log('Booking form script loaded!');
 
-    // ===== Get Edit Mode Status =====
+    // Get Edit Mode Status
     var isEditMode = window.isEditMode || false;
     var bookingId = window.bookingId || null;
 
     console.log('Edit Mode:', isEditMode);
     console.log('Booking ID:', bookingId);
 
-    // ===== Get CSRF Token =====
+    // Get CSRF Token
     function getCsrfToken() {
         return $('meta[name="csrf-token"]').attr('content');
     }
 
-    // ===== Update Car Details Display =====
+    // Update Car Details Display
     function updateCarDetails() {
         const $select = $('#car_id');
         const selectedOption = $select.find('option:selected');
@@ -47,7 +47,7 @@ $(document).ready(function() {
         updateCostEstimate();
     }
 
-    // ===== Update Cost Estimate in Real-time =====
+    //Update Cost Estimate in Real-time
     function updateCostEstimate() {
         const start = $('#rental_start_date').val();
         const end = $('#rental_end_date').val();
@@ -89,12 +89,12 @@ $(document).ready(function() {
         return false;
     }
 
-    // ===== Calculate Duration (alias for updateCostEstimate) =====
+    //Calculate Duration (alias for updateCostEstimate)
     function calculateDuration() {
         return updateCostEstimate();
     }
 
-    // ===== Validate Date Selection =====
+    //Validate Date Selection
     function validateDateSelection() {
         var carId = $('#car_id').val();
         var start = $('#rental_start_date').val();
@@ -129,7 +129,7 @@ $(document).ready(function() {
         return null;
     }
 
-    // ===== Check Car Availability =====
+    //Check Car Availability
     function checkAvailability() {
         var carId = $('#car_id').val();
         var start = $('#rental_start_date').val();
@@ -195,7 +195,7 @@ $(document).ready(function() {
         }
     }
 
-    // ===== Update Submit Button State =====
+    //Update Submit Button State
     function updateSubmitButton() {
         var $submitBtn = $('#submit-btn');
         var carId = $('#car_id').val();
@@ -241,7 +241,7 @@ $(document).ready(function() {
         }
     }
 
-    // ===== Event Handlers =====
+    // Event Handlers
     $('#car_id').on('change', function() {
         updateCarDetails();
         checkAvailability();
@@ -269,7 +269,7 @@ $(document).ready(function() {
         updateSubmitButton();
     });
 
-    // ===== Set minimum date to now =====
+    //Set minimum date to now 
     var now = new Date();
     var year = now.getFullYear();
     var month = String(now.getMonth() + 1).padStart(2, '0');
@@ -288,7 +288,7 @@ $(document).ready(function() {
         updateSubmitButton();
     });
 
-    // ===== Form Submit - Supports Create & Edit =====
+    // Form Submit - Supports Create & Edit
     $('#booking-form').on('submit', function(e) {
         e.preventDefault();
         
@@ -400,7 +400,7 @@ $(document).ready(function() {
         });
     });
 
-    // ===== Get SweetAlert instance =====
+    // Get SweetAlert instance
     function getSwal() {
         if (typeof Swal !== 'undefined') {
             return Swal;

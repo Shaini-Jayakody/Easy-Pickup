@@ -4,18 +4,18 @@
  */
 
 $(document).ready(function() {
-    // ===== Get CSRF Token =====
+    //Get CSRF Token
     function getCsrfToken() {
         return $('meta[name="csrf-token"]').attr('content');
     }
 
-    // ===== Check if user is admin/manager =====
+    // Check if user is admin/manager 
     function isAdmin() {
         var role = $('body').data('user-role') || '';
         return role === 'admin' || role === 'manager';
     }
 
-    // ===== Initialize DataTable =====
+    //Initialize DataTable 
     var table = $('#bookings-table').DataTable({
         processing: true,
         serverSide: true,
@@ -111,9 +111,8 @@ $(document).ready(function() {
         }
     });
 
-    // ============================================
+  
     // FILTER HANDLERS - ALL USERS
-    // ============================================
 
     $('#status-filter').on('change', function() {
         table.ajax.reload();
@@ -148,10 +147,7 @@ $(document).ready(function() {
         table.ajax.reload();
     });
 
-    // ============================================
     // STATUS DROPDOWNS (Admin/Manager)
-    // ============================================
-
     function initializeStatusDropdowns() {
         $('.status-dropdown').off('change').on('change', function() {
             var $select = $(this);
@@ -231,10 +227,8 @@ $(document).ready(function() {
         });
     }
 
-    // ============================================
+    
     // BOOKING DETAILS MODAL
-    // ============================================
-
     $(document).on('click', '.view-booking', function(e) {
         e.preventDefault();
         var id = $(this).data('id');
@@ -293,10 +287,8 @@ $(document).ready(function() {
         });
     });
 
-    // ============================================
-    // INVOICE BUTTON - Navigate to Invoice Form
-    // ============================================
-
+   
+    // INVOICE BUTTON 
     $(document).on('click', '.invoice-booking', function(e) {
         e.preventDefault();
         var bookingId = $(this).data('id');
@@ -308,10 +300,8 @@ $(document).ready(function() {
         window.location.href = '/invoices/create?booking_id=' + bookingId;
     });
 
-    // ============================================
+ 
     // CANCEL BOOKING (User)
-    // ============================================
-
     var cancelBookingId = null;
     var cancelRefNo = null;
 

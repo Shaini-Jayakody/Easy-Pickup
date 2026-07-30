@@ -7,7 +7,7 @@ $(document).ready(function() {
     console.log('Car form script loaded!');
     console.log('SweetAlert2 loaded:', typeof Swal !== 'undefined' || typeof window.Swal !== 'undefined');
 
-    // ===== Initialize Select2 =====
+    //Initialize Select2
     function initSelect2() {
         $('#car_brand').select2({
             placeholder: 'Search Brand...',
@@ -22,7 +22,7 @@ $(document).ready(function() {
         });
     }
 
-    // ===== Filter models based on brand =====
+    // Filter models based on brand 
     function filterModelsByBrand() {
         $('#car_brand').on('change', function() {
             var brandId = $(this).val();
@@ -47,7 +47,7 @@ $(document).ready(function() {
         });
     }
 
-    // ===== Color Field - Allow Only Letters =====
+    //Color Field - Allow Only Letters 
     function restrictColorInput() {
         $('#car_color').on('input', function() {
             var value = $(this).val();
@@ -74,7 +74,7 @@ $(document).ready(function() {
         });
     }
 
-    // ===== Price Field =====
+    //Price Field
     function formatPrice() {
         $('#rent_price_per_hour').on('blur', function() {
             var value = $(this).val().trim();
@@ -108,7 +108,7 @@ $(document).ready(function() {
         });
     }
 
-    // ===== Update Submit Button State =====
+    //Update Submit Button State
     function updateSubmitButton() {
         var $submitBtn = $('#submit-btn');
         var hasErrors = false;
@@ -168,12 +168,12 @@ $(document).ready(function() {
         }
     }
 
-    // ===== Check if in Edit Mode =====
+    //Check if in Edit Mode
     function isEditMode() {
         return $('#car_id').length > 0 && $('#car_id').val() !== '';
     }
 
-    // ===== Get Form Action URL =====
+    // Get Form Action URL
     function getFormAction() {
         if (isEditMode()) {
             var carId = $('#car_id').val();
@@ -182,7 +182,7 @@ $(document).ready(function() {
         return '/car/save';
     }
 
-    // ===== Attach validation events =====
+    //Attach validation events
     function attachValidationEvents() {
         $('#car_brand').on('change', function() { 
             CarValidation.validate('car_brand');
@@ -238,7 +238,7 @@ $(document).ready(function() {
         });
     }
 
-    // ===== Check if SweetAlert is available =====
+    //Check if SweetAlert is available
     function getSwal() {
         if (typeof Swal !== 'undefined') {
             return Swal;
@@ -253,7 +253,7 @@ $(document).ready(function() {
         return getSwal() !== null;
     }
 
-    // ===== Show SweetAlert Popup with Two Options =====
+    //Show SweetAlert Popup with Two Options
     function showSuccessPopup(message, redirectUrl) {
         var swal = getSwal();
         
@@ -283,7 +283,7 @@ $(document).ready(function() {
         });
     }
 
-    // ===== Show Error Popup =====
+    //Show Error Popup
     function showErrorPopup(message) {
         var swal = getSwal();
         
@@ -301,7 +301,7 @@ $(document).ready(function() {
         });
     }
 
-    // ===== Submit the form =====
+    //Submit the form
     function submitForm() {
         console.log('Submitting form...');
         console.log('Is Edit Mode:', isEditMode());
@@ -401,7 +401,7 @@ $(document).ready(function() {
         });
     }
 
-    // ===== Handle form submission =====
+    //Handle form submission
     function handleFormSubmit() {
         $('#car-form').on('submit', function(e) {
             e.preventDefault();
@@ -436,7 +436,7 @@ $(document).ready(function() {
         });
     }
 
-    // ===== Initialize everything =====
+    //Initialize everything
     function init() {
         console.log('Initializing car form...');
         console.log('SweetAlert2 available:', isSwalAvailable());

@@ -6,7 +6,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Registration script loaded!');
 
-    // ===== Get all elements =====
+    // Get all elements 
     const name = document.getElementById('name');
     const idNum = document.getElementById('id_num');
     const email = document.getElementById('email');
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const address = document.getElementById('address');
     const form = document.getElementById('register-form');
 
-    // ===== Error elements =====
+    // Error elements
     const nameErr = document.getElementById('name-error');
     const idNumErr = document.getElementById('id_num-error');
     const emailErr = document.getElementById('email-error');
@@ -27,19 +27,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const genderErr = document.getElementById('gender-error');
     const addressErr = document.getElementById('address-error');
 
-    // ===== Strength elements =====
+    // Strength elements
     const strengthBar = document.getElementById('strength-bar');
     const strengthText = document.getElementById('strength-text');
 
-    // ===== Eye icon elements =====
+    //Eye icon elements
     const passIcon = document.getElementById('pass-icon');
     const confirmIcon = document.getElementById('confirm-icon');
 
-    // ===== Asset paths from PHP =====
+    // Asset paths from PHP 
     const EYE_OPEN = typeof ASSET_PATHS !== 'undefined' ? ASSET_PATHS.eyeOpen : '/images/eye-open.svg';
     const EYE_CLOSED = typeof ASSET_PATHS !== 'undefined' ? ASSET_PATHS.eyeClosed : '/images/eye-closed.svg';
 
-    // ===== Helper Functions =====
+    // Helper Functions
     function setValid(input) {
         input.classList.remove('invalid');
         input.classList.add('valid');
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
         errorEl.style.display = 'none';
     }
 
-    // ===== Password Strength =====
+    //Password Strength
     function updateStrength(pwd) {
         let score = 0;
         if (pwd.length >= 8) score++;
@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // ===== ID NUMBER VALIDATION =====
+    //ID NUMBER VALIDATION 
     function validateIdNumber(id) {
         id = id.trim().toUpperCase();
         
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return { valid: false, message: 'Use format: 123456789V (old) or 123456789012 (new)', type: 'error' };
     }
 
-    // ===== ID FORMAT HINT (Only shows one message at a time) =====
+    // ID FORMAT HINT (Only shows one message at a time)
     function showFormatHint(message, type) {
         let hint = document.getElementById('id-format-hint');
         if (!hint) {
@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // ===== ID NUMBER INPUT HANDLER =====
+    // ID NUMBER INPUT HANDLER
     idNum.addEventListener('input', function() {
         this.value = this.value.replace(/\s/g, '').toUpperCase();
         if (this.value.length > 12) {
@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
         showFormatHint(result.message, 'valid');
     });
 
-    // ===== 1. NAME =====
+    // NAME 
     name.addEventListener('input', function() {
         if (/\d/.test(this.value)) {
             this.value = this.value.replace(/\d/g, '');
@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ===== 3. EMAIL =====
+    // EMAIL 
     email.addEventListener('input', function() {
         const val = this.value.trim();
         clearError(emailErr);
@@ -262,7 +262,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setValid(this);
     });
 
-    // ===== 4. PASSWORD =====
+    //PASSWORD 
     password.addEventListener('input', function() {
         const val = this.value;
         clearError(passErr);
@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ===== 5. CONFIRM PASSWORD =====
+    // CONFIRM PASSWORD 
     function validateConfirm() {
         const val = confirmPass.value;
         clearError(confirmErr);
@@ -303,7 +303,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     confirmPass.addEventListener('input', validateConfirm);
 
-    // ===== 6. AGE =====
+    //  AGE 
     age.addEventListener('input', function() {
         const val = this.value.trim();
         clearError(ageErr);
@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setValid(this);
     });
 
-    // ===== 7. GENDER =====
+    //  GENDER
     gender.addEventListener('change', function() {
         const val = this.value;
         clearError(genderErr);
@@ -340,7 +340,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setValid(this);
     });
 
-    // ===== 8. ADDRESS =====
+    //  ADDRESS
     address.addEventListener('input', function() {
         const val = this.value.trim();
         clearError(addressErr);
@@ -360,7 +360,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setValid(this);
     });
 
-    // ===== EYE TOGGLE =====
+    //EYE TOGGLE
     document.getElementById('togglePass').addEventListener('click', function() {
         const isPass = password.type === 'password';
         password.type = isPass ? 'text' : 'password';
@@ -375,7 +375,7 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmIcon.alt = isPass ? 'Hide password' : 'Show password';
     });
 
-    // ===== FORM SUBMIT =====
+    // FORM SUBMIT
     form.addEventListener('submit', function(e) {
         name.dispatchEvent(new Event('input'));
         idNum.dispatchEvent(new Event('input'));

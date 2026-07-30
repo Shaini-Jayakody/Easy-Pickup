@@ -6,12 +6,12 @@
 $(document).ready(function() {
     console.log('Brand index script loaded!');
 
-    // ===== Get CSRF Token =====
+    // Get CSRF Token 
     function getCsrfToken() {
         return $('meta[name="csrf-token"]').attr('content');
     }
 
-    // ===== Delete Brand =====
+    // Delete Brand
     $(document).on('click', '.delete-brand', function(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -29,7 +29,7 @@ $(document).ready(function() {
             
             $.ajax({
                 url: '/car/brands/' + id + '/delete',
-                type: 'DELETE',  // ✅ Use DELETE directly
+                type: 'DELETE', 
                 data: {
                     _token: getCsrfToken()
                 },
@@ -73,7 +73,7 @@ $(document).ready(function() {
         }
     });
 
-    // ===== Get SweetAlert instance =====
+    // Get SweetAlert instance
     function getSwal() {
         if (typeof Swal !== 'undefined') {
             return Swal;

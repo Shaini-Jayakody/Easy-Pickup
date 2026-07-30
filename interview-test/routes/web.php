@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CarDetail\CarController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Response;
+use App\Http\Controllers\DashboardController;
 
 
 // INCLUDE ROUTES
@@ -30,15 +31,14 @@ Route::get('/home', function () {
 })->name('home');
 
 
-// DASHBOARD
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth'])->name('dashboard');
-
-
 // PROFILE ROUTEs
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+     // Dashboard routes
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
+    Route::get('/dashboard/recent-activity', [DashboardController::class, 'getRecentActivityData']);
 });
