@@ -11,7 +11,7 @@
             <span class="ref">Ref: {{ $invoice->invoice_ref_no ?? 'N/A' }}</span>
         </div>
         <div class="company-info">
-            <h3>Car Rental System</h3>
+            <h3><strong>Easy <span style="color: #87CEEB;">Pickup</span></strong></h3>
             <p>123 Main Street, Colombo</p>
             <p>Tel: +94 11 234 5678</p>
             <p>Email: info@carrental.com</p>
@@ -53,13 +53,13 @@
         </div>
         <div class="info-group">
             <label>Car Details</label>
-            <p><strong>{{ $invoice->car->name ?? 'No Car Found' }}</strong></p>
+            <p><strong>{{ $invoice->booking->car->name ?? 'No Car Found' }}</strong></p>
             <label>Number Plate</label>
-            <p>{{ $invoice->car->number_plate ?? 'N/A' }}</p>
+            <p>{{ $invoice->booking->car->number_plate ?? 'N/A' }}</p>
             <label>Reference No</label>
-            <p>{{ $invoice->car->ref_no ?? 'N/A' }}</p>
+            <p>{{ $invoice->booking->car->ref_no ?? 'N/A' }}</p>
             <label>Price Per Hour</label>
-            <p>Rs. {{ number_format($invoice->car->rent_price_per_hour ?? 0, 2) }}</p>
+            <p>Rs. {{ number_format($invoice->booking->car->rent_price_per_hour ?? 0, 2) }}</p>
         </div>
         <div class="info-group">
             <label>Rental Period</label>
@@ -68,18 +68,6 @@
             <p><strong>Returned:</strong> {{ $invoice->returned_date ? date('d/m/Y H:i', strtotime($invoice->returned_date)) : 'N/A' }}</p>
         </div>
     </div>
-
-    <!-- Debug Info (Remove after fixing) -->
-    @if(env('APP_DEBUG'))
-    <div class="debug-info" style="background:#f8d7da; padding:15px; margin:15px 0; border:1px solid #f5c6cb; border-radius:4px;">
-        <h5 style="color:#721c24;">Debug Info:</h5>
-        <p><strong>Car ID:</strong> {{ $invoice->car_id ?? 'Null' }}</p>
-        <p><strong>Car Object:</strong> {{ $invoice->car ? 'Exists' : 'Null' }}</p>
-        <p><strong>Booking ID:</strong> {{ $invoice->booking_id ?? 'Null' }}</p>
-        <p><strong>User ID:</strong> {{ $invoice->user_id ?? 'Null' }}</p>
-        <p><strong>Total Cars:</strong> {{ \App\Models\CarDetail\Car::count() }}</p>
-    </div>
-    @endif
 
     <!-- Cost Breakdown -->
     <h4 class="section-title">Cost Breakdown</h4>
@@ -92,18 +80,26 @@
         </thead>
         <tbody>
             @php
+                // Get car from booking as fallback
+                $car = $invoice->car ?? $invoice->booking->car ?? null;
+                $pricePerHour = $car->rent_price_per_hour ?? 0;
+                
+                // Calculate hours
                 $expectedHours = $invoice->booking ? $invoice->booking->getDurationInHours() : 0;
-                $pricePerHour = $invoice->car->rent_price_per_hour ?? 0;
+                $actualHours = $invoice->actual_hours ?? $expectedHours;
+                $extraHours = max(0, $actualHours - $expectedHours);
+                
+                // Costs
                 $baseCost = $expectedHours * $pricePerHour;
-                $extraCost = $invoice->extra_cost ?? 0;
+                $extraCost = $invoice->extra_cost ?? ($extraHours * $pricePerHour * 2);
                 $discountAmount = $invoice->discount_amount ?? 0;
                 $discountPercentage = $invoice->discount_percentage ?? 0;
                 $fineAmount = $invoice->fine_amount ?? 0;
                 $fineReason = $invoice->fine_reason ?? null;
-                $totalCost = $invoice->total_cost ?? 0;
-                $actualHours = $invoice->actual_hours ?? 0;
-                $extraHours = max(0, $actualHours - $expectedHours);
+                $totalCost = $invoice->total_cost ?? ($baseCost + $extraCost - $discountAmount + $fineAmount);
             @endphp
+            
+            @if($pricePerHour > 0)
             <tr>
                 <td>Base Cost ({{ $expectedHours }} hrs × Rs. {{ number_format($pricePerHour, 2) }})</td>
                 <td class="text-right">Rs. {{ number_format($baseCost, 2) }}</td>
@@ -126,11 +122,17 @@
                 <td class="text-right">Rs. {{ number_format($fineAmount, 2) }}</td>
             </tr>
             @endif
+            @else
+            <tr>
+                <td colspan="2" class="text-center text-danger">No price information available for this car.</td>
+            </tr>
+            @endif
         </tbody>
     </table>
 
     <!-- Total Section -->
     <div class="total-section">
+        @if($pricePerHour > 0)
         <div class="total-row">
             <span class="label">Sub Total:</span>
             <span class="value">Rs. {{ number_format($baseCost + $extraCost, 2) }}</span>
@@ -146,6 +148,7 @@
             <span class="label">Additional Charges:</span>
             <span class="value">Rs. {{ number_format($fineAmount, 2) }}</span>
         </div>
+        @endif
         @endif
         <div class="total-row grand-total">
             <span class="label">Total Cost:</span>

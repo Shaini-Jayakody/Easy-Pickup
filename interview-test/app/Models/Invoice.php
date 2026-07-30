@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\CarDetail\Car;  // Make sure this path is correct
 
 class Invoice extends Model
 {
@@ -55,7 +56,7 @@ class Invoice extends Model
 
     public function car()
     {
-        return $this->belongsTo(CarDetail\Car::class, 'car_id', 'id');
+        return $this->belongsTo(Car::class, 'car_id', 'id');
     }
 
     // ===== Helper Methods =====
@@ -71,7 +72,7 @@ class Invoice extends Model
 
     public function getStatusBadgeClass()
     {
-        return match($this->payment_status) {
+        return match($this->payment_status ?? 'pending') {
             'paid' => 'label-success',
             'pending' => 'label-warning',
             'failed' => 'label-danger',
@@ -81,10 +82,9 @@ class Invoice extends Model
 
     public function getTotalCostFormatted()
     {
-        return 'Rs. ' . number_format($this->total_cost, 2);
+        return 'Rs. ' . number_format($this->total_cost ?? 0, 2);
     }
 
-    // ===== Generate Invoice Reference =====
     public static function generateReference()
     {
         do {
@@ -92,5 +92,18 @@ class Invoice extends Model
         } while (self::where('invoice_ref_no', $refNo)->exists());
         
         return $refNo;
+    }
+
+    public static function calculateDiscount($userId)
+    {
+        $completedBookings = Booking::where('user_id', $userId)
+            ->where('status', 'completed')
+            ->count();
+
+        if ($completedBookings >= 5) {
+            return ['percentage' => 3, 'label' => '3% (Loyal Customer - 5+ bookings)'];
+        }
+
+        return ['percentage' => 0, 'label' => 'No discount available'];
     }
 }
