@@ -240,6 +240,8 @@ class CarController extends Controller
         ]);
     }
 
+    
+
     /**
      * Delete a car
      */

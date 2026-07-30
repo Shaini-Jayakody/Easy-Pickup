@@ -22,17 +22,10 @@ $(document).ready(function() {
         ajax: {
             url: "/bookings",
             data: function (d) {
-                // Status filter - everyone
                 d.status = $('#status-filter').val();
-                
-                // Car filter - everyone
                 d.car_id = $('#car-filter').val();
-                
-                // Date filters - everyone
                 d.date_from = $('#date-from').val();
                 d.date_to = $('#date-to').val();
-                
-                // NIC filter - admin/manager only
                 if (isAdmin()) {
                     d.nic = $('#nic-filter').val();
                 }
@@ -112,27 +105,22 @@ $(document).ready(function() {
     // FILTER HANDLERS - ALL USERS
     // ============================================
 
-    // Status filter change
     $('#status-filter').on('change', function() {
         table.ajax.reload();
     });
 
-    // Car filter change
     $('#car-filter').on('change', function() {
         table.ajax.reload();
     });
 
-    // Date from change
     $('#date-from').on('change', function() {
         table.ajax.reload();
     });
 
-    // Date to change
     $('#date-to').on('change', function() {
         table.ajax.reload();
     });
 
-    // NIC filter - admin/manager only (with debounce)
     var nicTimeout;
     $(document).on('keyup', '#nic-filter', function() {
         clearTimeout(nicTimeout);
@@ -141,7 +129,6 @@ $(document).ready(function() {
         }, 500);
     });
 
-    // Clear all filters
     $('#clear-filters').on('click', function() {
         $('#status-filter').val('');
         $('#car-filter').val('');
@@ -162,10 +149,8 @@ $(document).ready(function() {
             var newStatus = $select.val();
             var selectedText = $select.find('option:selected').text();
             
-            // Show loading state
             $select.prop('disabled', true);
             
-            // Get the status name for confirmation
             var statusText = selectedText.replace('→ ', '').trim();
             
             var swal = getSwal();
@@ -183,7 +168,6 @@ $(document).ready(function() {
                     if (result.isConfirmed) {
                         performStatusDropdownUpdate(bookingId, newStatus, $select);
                     } else {
-                        // Revert dropdown - reload table to reset
                         table.ajax.reload();
                     }
                 });
@@ -191,14 +175,12 @@ $(document).ready(function() {
                 if (confirm('Are you sure you want to change this booking to "' + statusText + '"?')) {
                     performStatusDropdownUpdate(bookingId, newStatus, $select);
                 } else {
-                    // Revert dropdown - reload table to reset
                     table.ajax.reload();
                 }
             }
         });
     }
 
-    // ===== Perform Status Update from Dropdown =====
     function performStatusDropdownUpdate(bookingId, newStatus, $select) {
         $.ajax({
             url: '/bookings/' + bookingId + '/status-dropdown',
@@ -222,7 +204,6 @@ $(document).ready(function() {
                     } else {
                         alert('✅ ' + response.message);
                     }
-                    // Reload DataTable
                     table.ajax.reload();
                 } else {
                     alert('❌ ' + (response.message || 'Error updating status.'));
@@ -235,7 +216,6 @@ $(document).ready(function() {
                     message = xhr.responseJSON.message;
                 }
                 alert('❌ ' + message);
-                // Reload table to reset dropdown
                 table.ajax.reload();
             }
         });
@@ -249,7 +229,6 @@ $(document).ready(function() {
         e.preventDefault();
         var id = $(this).data('id');
         
-        // Show loading state
         $('#booking-details').html('<div class="text-center"><span class="spinner-border" role="status"></span> Loading...</div>');
         $('#bookingModal').modal('show');
         
@@ -304,37 +283,45 @@ $(document).ready(function() {
     });
 
     // ============================================
+    // INVOICE BUTTON - Navigate to Invoice Form
+    // ============================================
+
+    $(document).on('click', '.invoice-booking', function(e) {
+        e.preventDefault();
+        var bookingId = $(this).data('id');
+        var refNo = $(this).data('ref') || '';
+        
+        console.log('Invoice button clicked for booking:', bookingId, refNo);
+        
+        // Navigate to invoice create page with booking id
+        window.location.href = '/invoices/create?booking_id=' + bookingId;
+    });
+
+    // ============================================
     // CANCEL BOOKING (User)
     // ============================================
 
     var cancelBookingId = null;
     var cancelRefNo = null;
 
-    // ===== Click handler for cancel button =====
     $(document).on('click', '.cancel-booking', function(e) {
         e.preventDefault();
         
         var id = $(this).data('id');
         var refNo = $(this).data('ref') || 'this booking';
         
-        console.log('Cancel button clicked for booking:', id, refNo);
-        
-        // Store booking details for modal
         cancelBookingId = id;
         cancelRefNo = refNo;
         
-        // Update modal
         $('#cancel-ref-no').text(refNo);
         $('#cancel-error').hide();
         $('#cancel-text').show();
         $('#cancel-spinner').hide();
         $('#confirm-cancel-btn').prop('disabled', false);
         
-        // Show modal
         $('#cancelModal').modal('show');
     });
 
-    // ===== Confirm cancel button =====
     $(document).on('click', '#confirm-cancel-btn', function() {
         if (!cancelBookingId) {
             console.error('No booking ID to cancel');
@@ -344,9 +331,6 @@ $(document).ready(function() {
         var $btn = $(this);
         var id = cancelBookingId;
         
-        console.log('Confirming cancellation for booking:', id);
-        
-        // Show loading state
         $('#cancel-text').hide();
         $('#cancel-spinner').show();
         $btn.prop('disabled', true);
@@ -359,8 +343,6 @@ $(document).ready(function() {
                 _token: getCsrfToken()
             },
             success: function(response) {
-                console.log('Cancel response:', response);
-                
                 if (response.success) {
                     $('#cancelModal').modal('hide');
                     
@@ -378,7 +360,6 @@ $(document).ready(function() {
                         alert('✅ ' + response.message);
                     }
                     
-                    // Reload DataTable
                     table.ajax.reload();
                 } else {
                     $('#cancel-error').text(response.message || 'Error cancelling booking.').show();
@@ -388,8 +369,6 @@ $(document).ready(function() {
                 }
             },
             error: function(xhr) {
-                console.error('Cancel error:', xhr);
-                
                 var message = 'Error cancelling booking.';
                 if (xhr.responseJSON && xhr.responseJSON.message) {
                     message = xhr.responseJSON.message;
@@ -402,7 +381,6 @@ $(document).ready(function() {
         });
     });
 
-    // ===== Reset cancel modal when closed =====
     $(document).on('hidden.bs.modal', '#cancelModal', function() {
         cancelBookingId = null;
         cancelRefNo = null;
@@ -410,101 +388,6 @@ $(document).ready(function() {
         $('#cancel-spinner').hide();
         $('#confirm-cancel-btn').prop('disabled', false);
         $('#cancel-error').hide();
-    });
-
-    // ============================================
-    // LEGACY STATUS MANAGEMENT (Admin - Button Based)
-    // Kept for backward compatibility
-    // ============================================
-
-    function updateStatus(id, action, actionLabel) {
-        var swal = getSwal();
-        if (isSwalAvailable() && swal) {
-            swal.fire({
-                title: 'Confirm Action',
-                text: 'Are you sure you want to ' + actionLabel + ' this booking?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#5cb85c',
-                cancelButtonColor: '#d9534f',
-                confirmButtonText: 'Yes, ' + actionLabel + ' it!',
-                cancelButtonText: 'Cancel'
-            }).then(function(result) {
-                if (result.isConfirmed) {
-                    performStatusUpdate(id, action, actionLabel);
-                }
-            });
-        } else {
-            if (confirm('Are you sure you want to ' + actionLabel + ' this booking?')) {
-                performStatusUpdate(id, action, actionLabel);
-            }
-        }
-    }
-
-    function performStatusUpdate(id, action, actionLabel) {
-        var $button = $('.' + action + '-booking[data-id="' + id + '"]');
-        var originalHtml = $button.html();
-        
-        $button.prop('disabled', true).html('<span class="spinner-border spinner-border-xs"></span>');
-
-        $.ajax({
-            url: '/bookings/' + id + '/status',
-            type: 'PUT',
-            data: {
-                _token: getCsrfToken(),
-                action: action
-            },
-            success: function(response) {
-                if (response.success) {
-                    var swal = getSwal();
-                    if (isSwalAvailable() && swal) {
-                        swal.fire({
-                            icon: 'success',
-                            title: 'Success!',
-                            text: response.message,
-                            timer: 2000,
-                            showConfirmButton: false,
-                            timerProgressBar: true
-                        });
-                    } else {
-                        alert('✅ ' + response.message);
-                    }
-                    table.ajax.reload();
-                } else {
-                    alert('❌ ' + (response.message || 'Error updating status.'));
-                    $button.prop('disabled', false).html(originalHtml);
-                }
-            },
-            error: function(xhr) {
-                var message = 'Error updating status.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    message = xhr.responseJSON.message;
-                }
-                alert('❌ ' + message);
-                $button.prop('disabled', false).html(originalHtml);
-            }
-        });
-    }
-
-    // Legacy button handlers (kept for backward compatibility)
-    $(document).on('click', '.confirm-booking', function() {
-        var id = $(this).data('id');
-        updateStatus(id, 'confirm', 'confirm');
-    });
-
-    $(document).on('click', '.issue-booking', function() {
-        var id = $(this).data('id');
-        updateStatus(id, 'issue', 'issue the car for');
-    });
-
-    $(document).on('click', '.return-booking', function() {
-        var id = $(this).data('id');
-        updateStatus(id, 'return', 'return');
-    });
-
-    $(document).on('click', '.complete-booking', function() {
-        var id = $(this).data('id');
-        updateStatus(id, 'complete', 'complete');
     });
 
     // ============================================

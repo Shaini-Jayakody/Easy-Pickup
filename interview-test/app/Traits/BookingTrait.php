@@ -487,64 +487,109 @@ trait BookingTrait
     }
 
     /**
-     * Generate action buttons for booking
+     * Get action buttons for booking (called by DataTables)
      */
     public function getActionButtons($booking): string
     {
-        $actions = '<div class="action-buttons">';
+        $isAdmin = $this->hasBookingPermission();
         
-        // View button
-        $actions .= '<a href="#" class="action-btn btn-info view-booking" 
-                    data-id="' . $booking->booking_id . '" 
-                    title="View Details">
-                    <span class="glyphicon glyphicon-eye-open"></span>
-                </a> ';
+        // ===== LEFT SIDE: View and Invoice Buttons =====
+        $leftActions = '';
         
-        // Admin/Manager: Status Dropdown
-        if ($this->hasBookingPermission()) {
-            $actions .= $this->getStatusDropdown($booking);
-        } 
-        // Regular User: Edit/Cancel Buttons
-        else {
-            $canEdit = $this->canEditBooking($booking);
-            $canCancel = $this->canCancelBooking($booking);
-            
-            // Edit button
-            if ($canEdit) {
-                $actions .= '<a href="' . route('bookings.edit', $booking->booking_id) . '" 
-                            class="action-btn btn-edit" 
-                            title="Edit Booking">
-                            <span class="glyphicon glyphicon-edit"></span>
-                        </a> ';
-            } else {
-                $editReason = $this->getEditDisabledReason($booking);
-                $actions .= '<button class="action-btn btn-edit" disabled title="' . $editReason . '">
-                            <span class="glyphicon glyphicon-edit"></span>
-                        </button> ';
-            }
-            
-            // Cancel button
-            if ($canCancel) {
-                $actions .= '<button class="action-btn btn-cancel cancel-booking" 
+        // View button - everyone
+        $leftActions .= '<button type="button" class="btn btn-info btn-xs action-btn view-booking" 
                             data-id="' . $booking->booking_id . '" 
-                            data-ref="' . $booking->booking_ref_no . '"
-                            title="Cancel Booking">
-                            <span class="glyphicon glyphicon-remove"></span>
-                        </button> ';
+                            title="View Details"
+                            style="display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; border-radius:4px; border:none; background-color:#17a2b8; color:white; cursor:pointer; transition:all 0.2s;">
+                            <img src="' . asset('images/eye-open.svg') . '" alt="View" width="14" height="14" style="filter: brightness(0) invert(1);">
+                        </button>';
+        
+        // Invoice button - admin/manager only and only for completed bookings without invoice
+        if ($isAdmin && $booking->status === 'completed') {
+            // Check if invoice already exists
+            $hasInvoice = $booking->invoice()->exists();
+            
+            if (!$hasInvoice) {
+                $leftActions .= '<a href="' . route('invoices.create') . '?booking_id=' . $booking->booking_id . '" 
+                                    class="btn btn-success btn-xs action-btn invoice-booking" 
+                                    data-id="' . $booking->booking_id . '" 
+                                    data-ref="' . $booking->booking_ref_no . '"
+                                    title="Generate Invoice"
+                                    style="display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; border-radius:4px; border:none; background-color:#28a745; color:white; cursor:pointer; text-decoration:none; transition:all 0.2s;">
+                                    <img src="' . asset('images/invoice.svg') . '" alt="Invoice" width="14" height="14" style="filter: brightness(0) invert(1);">
+                                </a>';
             } else {
-                $cancelReason = $this->getCancelDisabledReason($booking);
-                $actions .= '<button class="action-btn btn-cancel" disabled title="' . $cancelReason . '">
-                            <span class="glyphicon glyphicon-remove"></span>
-                        </button> ';
+                $leftActions .= '<span class="invoice-exists" 
+                                    title="Invoice already generated"
+                                    style="display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:4px; background-color:#6c757d; color:white; opacity:0.6;">
+                                    <img src="' . asset('images/invoice-check.svg') . '" alt="Invoice Generated" width="14" height="14" style="filter: brightness(0) invert(1);">
+                                </span>';
             }
         }
         
-        $actions .= '</div>';
-        return $actions;
+        // ===== RIGHT SIDE: Status Dropdown (Admin/Manager Only) =====
+        $rightActions = '';
+        
+        if ($isAdmin) {
+            $statusOptions = $this->getStatusOptionsForDropdown($booking->status);
+            $rightActions = '<select class="form-control input-sm status-dropdown" 
+                                    data-booking-id="' . $booking->booking_id . '" 
+                                    style="width: auto; display: inline-block; padding: 2px 20px 2px 8px; height: 28px; font-size: 11px; border-radius: 4px; min-width: 80px; border: 1px solid #ccc; background-color: #fff; cursor: pointer;">
+                                ' . $statusOptions . '
+                            </select>';
+        } else {
+            // For users, show status badge only
+            $rightActions = '<span class="label-status label-' . $booking->status . '">' . ucfirst($booking->status) . '</span>';
+        }
+        
+        // ===== Combine: Left side (View + Invoice) and Right side (Status) =====
+        return '<div class="action-column-wrapper" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 140px;">
+                    <div class="action-left" style="display: flex; gap: 4px; align-items: center;">
+                        ' . $leftActions . '
+                    </div>
+                    <div class="action-right" style="display: flex; gap: 4px; align-items: center;">
+                        ' . $rightActions . '
+                    </div>
+                </div>';
     }
 
     /**
-     * Generate status dropdown for admin/manager
+     * Get status options for dropdown
+     */
+    public function getStatusOptionsForDropdown($currentStatus)
+    {
+        // Define allowed status transitions
+        $allowedTransitions = [
+            'pending' => ['pending', 'confirmed', 'cancelled'],
+            'confirmed' => ['confirmed', 'active', 'cancelled'],
+            'active' => ['active', 'returned'],
+            'returned' => ['returned', 'completed'],
+            'completed' => ['completed'],
+            'cancelled' => ['cancelled']
+        ];
+        
+        $allowedStatuses = $allowedTransitions[$currentStatus] ?? [$currentStatus];
+        
+        $statusLabels = [
+            'pending' => 'Pending',
+            'confirmed' => 'Confirmed',
+            'active' => 'Active',
+            'returned' => 'Returned',
+            'completed' => 'Completed',
+            'cancelled' => 'Cancelled'
+        ];
+        
+        $options = '';
+        foreach ($allowedStatuses as $status) {
+            $selected = $status === $currentStatus ? 'selected' : '';
+            $options .= '<option value="' . $status . '" ' . $selected . '>' . $statusLabels[$status] . '</option>';
+        }
+        
+        return $options;
+    }
+
+    /**
+     * Get status dropdown (legacy - kept for compatibility)
      */
     public function getStatusDropdown($booking): string
     {

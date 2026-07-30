@@ -34,6 +34,14 @@ class IconHelper
         return self::getSvgFile('view', $size);
     }
 
+     /**
+     * Get Invoice SVG Icon
+     */
+    public static function invoice($size = 16, $color = 'currentColor')
+    {
+        return self::getSvgFile('invoice', $size, $color);
+    }
+    
     public static function add($size = 16)
     {
         return self::getSvgFile('add', $size);
