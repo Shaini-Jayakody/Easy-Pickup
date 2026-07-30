@@ -136,7 +136,7 @@ public function getActiveBookingsCount($carId): int
     {
         $car = CarModel::findOrFail($id);
         
-        // ✅ Check if car has active bookings before updating
+        // Check if car has active bookings before updating
         if ($this->carHasBookings($id)) {
             $bookingCount = $this->getActiveBookingsCount($id);
             throw new \Exception("Cannot update car because it has {$bookingCount} active booking(s). Please complete or cancel the bookings first.");
@@ -159,7 +159,7 @@ public function getActiveBookingsCount($carId): int
         $car = CarModel::findOrFail($id);
         $carName = $car->name;
         
-        // ✅ Check if car has active bookings before deleting
+        // Check if car has active bookings before deleting
         if ($this->carHasBookings($id)) {
             $bookingCount = $this->getActiveBookingsCount($id);
             throw new \Exception("Cannot delete car because it has {$bookingCount} active booking(s). Please complete or cancel the bookings first.");
@@ -177,7 +177,7 @@ public function getActiveBookingsCount($carId): int
     // UNIQUENESS CHECKS
 
     /**
-     * Check if engine number exists (with optional exclude)
+     * Check if engine number exists
      */
     public function engineNumberExists(string $engineNumber, $excludeId = null): bool
     {
@@ -191,7 +191,7 @@ public function getActiveBookingsCount($carId): int
     }
 
     /**
-     * Check if chassis number exists (with optional exclude)
+     * Check if chassis number exists
      */
     public function chassisExists(string $chassisNumber, $excludeId = null): bool
     {
@@ -205,7 +205,7 @@ public function getActiveBookingsCount($carId): int
     }
 
     /**
-     * Check if number plate exists (with optional exclude)
+     * Check if number plate exists 
      */
     public function numberPlateExists(string $numberPlate, $excludeId = null): bool
     {
@@ -222,7 +222,7 @@ public function getActiveBookingsCount($carId): int
     // HELPER METHODS
 
     /**
-     * Generate a unique reference number (no duplicates)
+     * Generate a unique reference number
      */
     public function generateUniqueReference(): string
     {
@@ -330,9 +330,7 @@ public function getActiveBookingsCount($carId): int
 
     // FRONTEND VALIDATION RULES (for JavaScript)
 
-    /**
-     * Get frontend validation rules for JavaScript
-     */
+
     public function getCarFrontendValidationRules()
     {
         return [

@@ -35,10 +35,8 @@ class Booking extends Model
         'estimated_cost' => 'decimal:2',
     ];
 
-    // ============================================
-    // RELATIONSHIPS
-    // ============================================
     
+    // RELATIONSHIPS
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id', 'user_id');
@@ -54,10 +52,9 @@ class Booking extends Model
         return $this->hasOne(Invoice::class, 'booking_id', 'booking_id');
     }
 
-    // ============================================
+
     // REFERENCE GENERATION
-    // ============================================
-    
+
     /**
      * Generate unique booking reference
      */
@@ -70,10 +67,7 @@ class Booking extends Model
         return $refNo;
     }
 
-    // ============================================
     // BOOT METHOD
-    // ============================================
-    
     protected static function booted()
     {
         // Auto-calculate estimated cost on create

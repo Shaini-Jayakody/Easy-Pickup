@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\CarDetail\Car;  // Make sure this path is correct
+use App\Models\CarDetail\Car;  
 
 class Invoice extends Model
 {

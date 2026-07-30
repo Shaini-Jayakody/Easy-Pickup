@@ -47,7 +47,7 @@ trait InvoiceTrait
         $discountPercentage = $discount['percentage'];
         $discountAmount = ($baseCost + $extraCost) * ($discountPercentage / 100);
         
-        // Fine is manually entered, default to 0 (for damages or additional charges)
+        // Fine
         $fineAmount = 0;
         $fineReason = null;
         
@@ -137,7 +137,7 @@ trait InvoiceTrait
             throw new ValidationException($validator);
         }
 
-        // Additional validation: returned date must be after rental start
+        //returned date must be after rental start
         $booking = Booking::find($data['booking_id']);
         if ($booking) {
             $startDate = Carbon::parse($booking->rental_start_date);
@@ -220,7 +220,7 @@ trait InvoiceTrait
     }
 
     /**
-     * Format invoice for response (with related data)
+     * Format invoice for response 
      */
     public function formatInvoiceForResponse($invoice)
     {

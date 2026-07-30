@@ -15,9 +15,8 @@ use Illuminate\Http\Request;
 
 trait BookingTrait
 {
-    // ============================================
+   
     // QUERY METHODS
-    // ============================================
 
     /**
      * Get all bookings with relationships
@@ -28,7 +27,7 @@ trait BookingTrait
     }
 
     /**
-     * Apply filters to bookings (Car and Date for all users, NIC for admin only)
+     * Apply filters to bookings
      */
     public function applyFilters($query, $request)
     {
@@ -58,7 +57,7 @@ trait BookingTrait
     }
 
     /**
-     * Get filtered bookings based on user role (legacy - kept for compatibility)
+     * Get filtered bookings based on user role
      */
     public function getFilteredBookings(Request $request)
     {
@@ -136,9 +135,8 @@ trait BookingTrait
             });
     }
 
-    // ============================================
+
     // CRUD OPERATIONS
-    // ============================================
 
     /**
      * Create a new booking with estimated cost
@@ -252,7 +250,7 @@ public function updateBooking($id, array $data): array
     }
 
     /**
-     * Update booking status with validation (for dropdown)
+     * Update booking status with validation
      */
     public function updateBookingStatusWithValidation($id, string $newStatus): array
     {
@@ -319,9 +317,8 @@ public function updateBooking($id, array $data): array
         ];
     }
 
-    // ============================================
+
     // VALIDATION METHODS
-    // ============================================
 
     /**
      * Validate booking data
@@ -366,7 +363,7 @@ public function updateBooking($id, array $data): array
     }
 
     /**
-     * Validate booking update (with additional restrictions)
+     * Validate booking update 
      */
     public function validateBookingUpdate(array $data, $bookingId)
     {
@@ -414,7 +411,7 @@ public function updateBooking($id, array $data): array
     }
 
     /**
-     * Validate the requested rental window.
+     * Validate the requested rental window
      */
     public function validateRentalDuration($startDate, $endDate): void
     {
@@ -515,9 +512,8 @@ public function updateBooking($id, array $data): array
         return !$query->exists();
     }
 
-    // ============================================
+    
     // UI HELPER METHODS
-    // ============================================
 
     /**
      * Generate status badge HTML
@@ -536,7 +532,6 @@ public function updateBooking($id, array $data): array
     {
         $isAdmin = $this->hasBookingPermission();
         
-        // ===== LEFT SIDE: View and Invoice Buttons =====
         $leftActions = '';
         
         // View button - everyone
@@ -547,7 +542,7 @@ public function updateBooking($id, array $data): array
                             <img src="' . asset('images/eye-open.svg') . '" alt="View" width="14" height="14" style="filter: brightness(0) invert(1);">
                         </button>';
         
-        // Invoice button - admin/manager only and only for completed bookings without invoice
+        // Invoice button 
         if ($isAdmin && $booking->status === 'completed') {
             // Check if invoice already exists
             $hasInvoice = $booking->invoice()->exists();
@@ -570,7 +565,7 @@ public function updateBooking($id, array $data): array
             }
         }
         
-        // ===== RIGHT SIDE: Status Dropdown (Admin/Manager Only) =====
+        //Status Dropdown (Admin/Manager Only)
         $rightActions = '';
         
         if ($isAdmin) {
@@ -585,7 +580,7 @@ public function updateBooking($id, array $data): array
             $rightActions = '<span class="label-status label-' . $booking->status . '">' . ucfirst($booking->status) . '</span>';
         }
         
-        // ===== Combine: Left side (View + Invoice) and Right side (Status) =====
+
         return '<div class="action-column-wrapper" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 140px;">
                     <div class="action-left" style="display: flex; gap: 4px; align-items: center;">
                         ' . $leftActions . '
@@ -673,7 +668,7 @@ public function updateBooking($id, array $data): array
     }
 
     /**
-     * Get color for status (for dropdown options)
+     * Get color for status
      */
     public function getStatusColor($status): string
     {
@@ -716,9 +711,8 @@ public function updateBooking($id, array $data): array
         return 'Cannot cancel';
     }
 
-    // ============================================
+    
     // PERMISSION METHODS
-    // ============================================
 
     /**
      * Check if user has permission to manage bookings
@@ -769,9 +763,8 @@ public function updateBooking($id, array $data): array
         return true;
     }
 
-    // ============================================
+  
     // HELPER METHODS
-    // ============================================
 
     /**
      * Calculate the rental duration in hours.
@@ -962,9 +955,8 @@ public function updateBooking($id, array $data): array
         return route('bookings.cancel', $booking->booking_id);
     }
 
-    // ============================================
+   
     // EXCEPTION HELPERS
-    // ============================================
 
     protected function throwValidationException(array $messages): void
     {
