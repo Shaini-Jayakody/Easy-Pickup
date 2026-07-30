@@ -34,7 +34,7 @@ $(document).ready(function() {
                 console.log('DataTable error:', error);
                 console.log('Status:', xhr.status);
                 console.log('Response:', xhr.responseText);
-                $('#bookings-table tbody').html('<tr><td colspan="11" class="text-center text-danger">Error loading data. Please refresh the page.</td></tr>');
+                $('#bookings-table tbody').html('<tr><td colspan="12" class="text-center text-danger">Error loading data. Please refresh the page.</td></tr>');
             }
         },
         columns: [
@@ -69,6 +69,16 @@ $(document).ready(function() {
                 searchable: false,
                 render: function(data) {
                     return data + ' hrs';
+                }
+            },
+            { 
+                data: 'estimated_cost', 
+                name: 'estimated_cost',
+                render: function(data) {
+                    if (data) {
+                        return 'Rs. ' + parseFloat(data).toFixed(2);
+                    }
+                    return 'N/A';
                 }
             },
             { 
@@ -260,6 +270,7 @@ $(document).ready(function() {
                             <p><strong>Start:</strong> ${booking.rental_start_date ? new Date(booking.rental_start_date).toLocaleString() : 'N/A'}</p>
                             <p><strong>End:</strong> ${booking.rental_end_date ? new Date(booking.rental_end_date).toLocaleString() : 'N/A'}</p>
                             <p><strong>Duration:</strong> ${(booking.duration_in_hours || booking.duration || 0)} hours</p>
+                            <p><strong>Estimated Cost:</strong> ${booking.estimated_cost ? 'Rs. ' + parseFloat(booking.estimated_cost).toFixed(2) : 'N/A'}</p>
                         </div>
                         <div class="col-md-4">
                             <h4><span class="glyphicon glyphicon-info-sign"></span> Status</h4>

@@ -141,29 +141,72 @@ trait BookingTrait
     // ============================================
 
     /**
-     * Create a new booking
+     * Create a new booking with estimated cost
      */
-    public function createBooking(array $data): array
-    {
-        $this->validateRentalDuration($data['rental_start_date'], $data['rental_end_date']);
-        $this->validateCarAvailability($data['car_id'], $data['rental_start_date'], $data['rental_end_date']);
+public function createBooking(array $data): array
+{
+    $this->validateRentalDuration($data['rental_start_date'], $data['rental_end_date']);
+    $this->validateCarAvailability($data['car_id'], $data['rental_start_date'], $data['rental_end_date']);
 
-        $booking = Booking::create([
-            'booking_ref_no' => $this->generateBookingReference(),
-            'user_id' => Auth::id(),
-            'car_id' => $data['car_id'],
-            'rental_start_date' => $data['rental_start_date'],
-            'rental_end_date' => $data['rental_end_date'],
-            'status' => 'pending',
-            'notes' => $data['notes'] ?? null,
-        ]);
+    // Get car and calculate estimated cost
+    $car = Car::find($data['car_id']);
+    $pricePerHour = $car->rent_price_per_hour ?? 0;
+    $start = Carbon::parse($data['rental_start_date']);
+    $end = Carbon::parse($data['rental_end_date']);
+    $duration = ceil($start->diffInHours($end));
+    $estimatedCost = $duration * $pricePerHour;
 
-        return [
-            'success' => true,
-            'message' => "Booking created successfully! Reference: {$booking->booking_ref_no}",
-            'booking' => $booking
-        ];
+    $booking = Booking::create([
+        'booking_ref_no' => $this->generateBookingReference(),
+        'user_id' => Auth::id(),
+        'car_id' => $data['car_id'],
+        'rental_start_date' => $data['rental_start_date'],
+        'rental_end_date' => $data['rental_end_date'],
+        'estimated_cost' => $estimatedCost,
+        'status' => 'pending',
+        'notes' => $data['notes'] ?? null,
+    ]);
+
+    return [
+        'success' => true,
+        'message' => "Booking created successfully! Reference: {$booking->booking_ref_no}",
+        'booking' => $booking
+    ];
+}
+
+/**
+ * Update booking with estimated cost recalculation
+ */
+public function updateBooking($id, array $data): array
+{
+    $booking = $this->getBookingById($id);
+    
+    if (!$booking->isPending()) {
+        throw new \Exception('Only pending bookings can be updated.');
     }
+
+    // Calculate new estimated cost
+    $car = Car::find($data['car_id']);
+    $pricePerHour = $car->rent_price_per_hour ?? 0;
+    $start = Carbon::parse($data['rental_start_date']);
+    $end = Carbon::parse($data['rental_end_date']);
+    $duration = ceil($start->diffInHours($end));
+    $estimatedCost = $duration * $pricePerHour;
+
+    $booking->update([
+        'car_id' => $data['car_id'],
+        'rental_start_date' => $data['rental_start_date'],
+        'rental_end_date' => $data['rental_end_date'],
+        'estimated_cost' => $estimatedCost,
+        'notes' => $data['notes'] ?? null,
+    ]);
+
+    return [
+        'success' => true,
+        'message' => 'Booking updated successfully!',
+        'booking' => $booking
+    ];
+}
 
     /**
      * Update booking status (legacy button method)
@@ -737,7 +780,20 @@ trait BookingTrait
     {
         $start = Carbon::parse($startDate);
         $end = Carbon::parse($endDate);
-        return (int) $start->diffInHours($end);
+        return (int) ceil($start->diffInHours($end));
+    }
+
+    /**
+     * Calculate estimated cost for booking
+     */
+    public function calculateEstimatedCost($carId, $startDate, $endDate): float
+    {
+        $car = Car::find($carId);
+        $pricePerHour = $car->rent_price_per_hour ?? 0;
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+        $duration = ceil($start->diffInHours($end));
+        return $duration * $pricePerHour;
     }
 
     /**
@@ -881,6 +937,7 @@ trait BookingTrait
             'rental_end_date' => $booking->rental_end_date,
             'duration' => $booking->getDurationInHours(),
             'duration_in_hours' => $booking->getDurationInHours(),
+            'estimated_cost' => $booking->estimated_cost ?? 0,
             'status' => $booking->status,
             'status_text' => $this->getStatusText($booking->status),
             'status_badge' => $this->getStatusBadge($booking->status),

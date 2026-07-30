@@ -33,39 +33,21 @@ $(document).ready(function() {
             $('#display-car-ref').text(ref);
             $('#display-car-price').text('Rs. ' + parseFloat(price).toFixed(2));
             $('#car-details').fadeIn(300);
+            
+            // Update price text in estimate panel
+            $('#price-text').text('Rs. ' + parseFloat(price).toFixed(2));
+            
+            // Show estimate panel
+            $('#cost-estimate-panel').fadeIn(300);
         } else {
             $('#car-details').fadeOut(300);
+            $('#cost-estimate-panel').fadeOut(300);
         }
         
         updateCostEstimate();
     }
 
-    // ===== Calculate Duration and Cost =====
-    function calculateDuration() {
-        var start = $('#rental_start_date').val();
-        var end = $('#rental_end_date').val();
-        
-        if (start && end) {
-            var startDate = new Date(start);
-            var endDate = new Date(end);
-            
-            if (endDate > startDate) {
-                var diffMs = endDate - startDate;
-                var diffHours = Math.round(diffMs / (1000 * 60 * 60));
-                $('#duration-text').text(diffHours + ' hours');
-                $('#duration-display').fadeIn(300);
-                updateCostEstimate();
-                return true;
-            } else {
-                $('#duration-display').fadeOut(300);
-                return false;
-            }
-        }
-        $('#duration-display').fadeOut(300);
-        return false;
-    }
-
-    // ===== Update Cost Estimate =====
+    // ===== Update Cost Estimate in Real-time =====
     function updateCostEstimate() {
         const start = $('#rental_start_date').val();
         const end = $('#rental_end_date').val();
@@ -77,17 +59,39 @@ $(document).ready(function() {
             
             if (endDate > startDate) {
                 const diffMs = endDate - startDate;
-                const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+                const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
                 const totalCost = diffHours * pricePerHour;
+                
+                // Update duration
+                $('#duration-text').text(diffHours + ' hours');
+                
+                // Update price
+                $('#price-text').text('Rs. ' + pricePerHour.toFixed(2));
+                
+                // Update estimated cost
                 $('#cost-text').text('Rs. ' + totalCost.toFixed(2));
-                $('#duration-display').fadeIn(300);
-                return;
+                
+                // Show estimate panel
+                $('#cost-estimate-panel').fadeIn(300);
+                return true;
             }
         }
         
+        // If no valid dates, show default values
         if (pricePerHour > 0) {
+            $('#duration-text').text('0 hours');
+            $('#price-text').text('Rs. ' + pricePerHour.toFixed(2));
             $('#cost-text').text('Rs. 0.00');
+            $('#cost-estimate-panel').fadeIn(300);
+        } else {
+            $('#cost-estimate-panel').fadeOut(300);
         }
+        return false;
+    }
+
+    // ===== Calculate Duration (alias for updateCostEstimate) =====
+    function calculateDuration() {
+        return updateCostEstimate();
     }
 
     // ===== Validate Date Selection =====
@@ -112,12 +116,12 @@ $(document).ready(function() {
             return 'Rental must start in the future.';
         }
 
-        var diffHours = Math.round((endDate - startDate) / (1000 * 60 * 60));
+        var diffHours = Math.ceil((endDate - startDate) / (1000 * 60 * 60));
         if (diffHours < 2) {
             return 'Rental duration must be at least 2 hours.';
         }
 
-        var diffDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
+        var diffDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
         if (diffDays > 30) {
             return 'Rental duration cannot exceed 1 month.';
         }
@@ -145,7 +149,6 @@ $(document).ready(function() {
             $status.show().removeClass('alert-success alert-danger alert-warning').addClass('alert-info');
             $status.html('<span class="spinner-border spinner-border-sm" role="status"></span> Checking availability...');
             
-            // Build data with booking_id for edit mode
             var data = {
                 car_id: carId,
                 start_date: start,
@@ -200,7 +203,6 @@ $(document).ready(function() {
         var end = $('#rental_end_date').val();
         var hasError = false;
         
-        // Check for visible error messages
         $('.error-msg').each(function() {
             if ($(this).is(':visible') && $(this).text().length > 0) {
                 hasError = true;
@@ -208,13 +210,11 @@ $(document).ready(function() {
             }
         });
         
-        // Check availability status
         var statusText = $('#availability-status').text();
         if (statusText.includes('NOT available')) {
             hasError = true;
         }
         
-        // Check if date range is valid
         if (start && end) {
             var startDate = new Date(start);
             var endDate = new Date(end);
@@ -247,7 +247,6 @@ $(document).ready(function() {
         checkAvailability();
         updateSubmitButton();
         
-        // Update calendar
         const carId = $(this).val();
         if (window.bookingCalendar) {
             window.bookingCalendar.setCarId(carId);
@@ -263,11 +262,11 @@ $(document).ready(function() {
         updateSubmitButton();
     }
 
-    $('#rental_start_date, #rental_end_date').on('change', function() {
-        calculateDuration();
+    // Real-time update when dates change
+    $('#rental_start_date, #rental_end_date').on('change input', function() {
+        updateCostEstimate();
         checkAvailability();
         updateSubmitButton();
-        updateCostEstimate();
     });
 
     // ===== Set minimum date to now =====
@@ -284,10 +283,9 @@ $(document).ready(function() {
     // Set end date min when start changes
     $('#rental_start_date').on('change', function() {
         $('#rental_end_date').attr('min', $(this).val());
-        calculateDuration();
+        updateCostEstimate();
         checkAvailability();
         updateSubmitButton();
-        updateCostEstimate();
     });
 
     // ===== Form Submit - Supports Create & Edit =====

@@ -8,6 +8,14 @@
     $selectedUserId = $isEdit ? $booking->user_id : request('user_id', Auth::id());
     $pageTitle = $isEdit ? 'Edit Booking #' . $booking->booking_ref_no : 'New Booking';
     $buttonText = $isEdit ? 'Update Booking' : 'Create Booking';
+    
+    // Calculate estimated cost for edit mode
+    $estimatedCost = 0;
+    $duration = 0;
+    if ($isEdit && $booking->car) {
+        $duration = $booking->getDurationInHours();
+        $estimatedCost = $duration * ($booking->car->rent_price_per_hour ?? 0);
+    }
 @endphp
 
 <div class="row">
@@ -86,16 +94,31 @@
                     <!-- Availability Status -->
                     <div id="availability-status" class="alert" style="display:none;"></div>
 
-                    <!-- Duration Display -->
-                    <div class="form-group" id="duration-display" style="display:{{ $isEdit ? 'block' : 'none' }};">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label>Duration</label>
-                                <p class="form-control-static duration-text" id="duration-text">{{ $isEdit ? $booking->getDurationInHours() : 0 }} hours</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label>Estimated Cost</label>
-                                <p class="form-control-static cost-text" id="cost-text">Rs. {{ $isEdit ? number_format($booking->getDurationInHours() * ($booking->car->rent_price_per_hour ?? 0), 2) : '0.00' }}</p>
+                    <!-- Duration & Estimated Cost Display -->
+                    <div class="panel panel-info" id="cost-estimate-panel" style="display:{{ $isEdit ? 'block' : 'none' }}; margin-top:15px;">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">Booking Estimate</h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label>Duration</label>
+                                    <p class="form-control-static" style="font-size:18px; font-weight:bold; color:#333;" id="duration-text">
+                                        {{ $isEdit ? $duration : 0 }} hours
+                                    </p>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>Price Per Hour</label>
+                                    <p class="form-control-static" style="font-size:18px; font-weight:bold; color:#333;" id="price-text">
+                                        Rs. {{ $isEdit && $booking->car ? number_format($booking->car->rent_price_per_hour ?? 0, 2) : '0.00' }}
+                                    </p>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>Estimated Cost</label>
+                                    <p class="form-control-static" style="font-size:20px; font-weight:bold; color:#28a745;" id="cost-text">
+                                        Rs. {{ $isEdit ? number_format($estimatedCost, 2) : '0.00' }}
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>

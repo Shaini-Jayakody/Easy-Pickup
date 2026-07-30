@@ -6,10 +6,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
 use App\Models\CarDetail\Car;
+use App\Traits\DurationCostTrait;
+use App\Traits\BookingStatusTrait;
 
 class Booking extends Model
 {
     use HasFactory;
+    use DurationCostTrait;
+    use BookingStatusTrait;
 
     protected $table = 'tbl_bookings';
     protected $primaryKey = 'booking_id';
@@ -20,6 +24,7 @@ class Booking extends Model
         'car_id',
         'rental_start_date',
         'rental_end_date',
+        'estimated_cost',
         'status',
         'notes'
     ];
@@ -27,9 +32,13 @@ class Booking extends Model
     protected $casts = [
         'rental_start_date' => 'datetime',
         'rental_end_date' => 'datetime',
+        'estimated_cost' => 'decimal:2',
     ];
 
-    // Relationships
+    // ============================================
+    // RELATIONSHIPS
+    // ============================================
+    
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id', 'user_id');
@@ -44,75 +53,14 @@ class Booking extends Model
     {
         return $this->hasOne(Invoice::class, 'booking_id', 'booking_id');
     }
+
+    // ============================================
+    // REFERENCE GENERATION
+    // ============================================
     
-    // Helper methods
-    public function isPending()
-    {
-        return strtolower((string) $this->status) === 'pending';
-    }
-
-    public function isConfirmed()
-    {
-        return strtolower((string) $this->status) === 'confirmed';
-    }
-
-    public function isActive()
-    {
-        return strtolower((string) $this->status) === 'active';
-    }
-
-    public function isReturned()
-    {
-        return strtolower((string) $this->status) === 'returned';
-    }
-
-    public function isCompleted()
-    {
-        return strtolower((string) $this->status) === 'completed';
-    }
-
-    public function isCancelled()
-    {
-        return strtolower((string) $this->status) === 'cancelled';
-    }
-
-    public function canBeCancelled()
-    {
-        return in_array(strtolower((string) $this->status), ['pending', 'confirmed']);
-    }
-
-    public function getDurationInHours()
-    {
-        return $this->rental_start_date->diffInHours($this->rental_end_date);
-    }
-
-    public function getStatusBadgeClass()
-    {
-        return match($this->status) {
-            'pending' => 'label label-warning',
-            'confirmed' => 'label label-info',
-            'active' => 'label label-success',
-            'returned' => 'label label-primary',
-            'completed' => 'label label-success',
-            'cancelled' => 'label label-danger',
-            default => 'label label-default'
-        };
-    }
-
-    public function getStatusText()
-    {
-        return match($this->status) {
-            'pending' => 'Pending',
-            'confirmed' => 'Confirmed',
-            'active' => 'Active',
-            'returned' => 'Returned',
-            'completed' => 'Completed',
-            'cancelled' => 'Cancelled',
-            default => ucfirst($this->status)
-        };
-    }
-
-    // Generate unique booking reference
+    /**
+     * Generate unique booking reference
+     */
     public static function generateReference()
     {
         do {
@@ -120,5 +68,32 @@ class Booking extends Model
         } while (self::where('booking_ref_no', $refNo)->exists());
         
         return $refNo;
+    }
+
+    // ============================================
+    // BOOT METHOD
+    // ============================================
+    
+    protected static function booted()
+    {
+        // Auto-calculate estimated cost on create
+        static::creating(function ($booking) {
+            if ($booking->car_id && $booking->rental_start_date && $booking->rental_end_date) {
+                $duration = $booking->getDurationInHours();
+                $pricePerHour = $booking->car->rent_price_per_hour ?? 0;
+                $booking->estimated_cost = $duration * $pricePerHour;
+            }
+        });
+
+        // Auto-calculate estimated cost on update
+        static::updating(function ($booking) {
+            if ($booking->isDirty(['car_id', 'rental_start_date', 'rental_end_date'])) {
+                if ($booking->car_id && $booking->rental_start_date && $booking->rental_end_date) {
+                    $duration = $booking->getDurationInHours();
+                    $pricePerHour = $booking->car->rent_price_per_hour ?? 0;
+                    $booking->estimated_cost = $duration * $pricePerHour;
+                }
+            }
+        });
     }
 }

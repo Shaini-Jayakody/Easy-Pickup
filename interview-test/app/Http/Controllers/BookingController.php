@@ -96,46 +96,42 @@ class BookingController extends Controller
     /**
      * Update an existing booking
      */
-    public function update(Request $request, $id)
-    {
-        try {
-            $booking = $this->getBookingById($id);
-            
-            if (!$this->canEditBooking($booking)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You cannot edit this booking. It may have already started or is not pending.'
-                ], 403);
-            }
-            
-            $validated = $this->validateBookingUpdate($request->all(), $id);
-            $this->validateCarAvailabilityForUpdate($booking->booking_id, $validated['car_id'], $validated['rental_start_date'], $validated['rental_end_date']);
-            
-            $booking->update([
-                'car_id' => $validated['car_id'],
-                'rental_start_date' => $validated['rental_start_date'],
-                'rental_end_date' => $validated['rental_end_date'],
-                'notes' => $validated['notes'] ?? null,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Booking updated successfully!',
-                'booking' => $booking
-            ]);
-
-        } catch (ValidationException $e) {
+public function update(Request $request, $id)
+{
+    try {
+        $booking = $this->getBookingById($id);
+        
+        if (!$this->canEditBooking($booking)) {
             return response()->json([
                 'success' => false,
-                'errors' => $e->validator->errors()->all()
-            ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error updating booking: ' . $e->getMessage()
-            ], 500);
+                'message' => 'You cannot edit this booking. It may have already started or is not pending.'
+            ], 403);
         }
+        
+        $validated = $this->validateBookingUpdate($request->all(), $id);
+        $this->validateCarAvailabilityForUpdate($booking->booking_id, $validated['car_id'], $validated['rental_start_date'], $validated['rental_end_date']);
+        
+        // Use the update method that calculates estimated cost
+        $result = $this->updateBooking($id, $validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Booking updated successfully!',
+            'booking' => $result['booking']
+        ]);
+
+    } catch (ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'errors' => $e->validator->errors()->all()
+        ], 422);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error updating booking: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Cancel a booking

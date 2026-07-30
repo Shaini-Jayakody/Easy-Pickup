@@ -80,6 +80,7 @@
                                 <th>Start Date</th>
                                 <th>End Date</th>
                                 <th>Duration</th>
+                                <th>Est. Cost</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
