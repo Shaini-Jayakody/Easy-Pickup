@@ -72,7 +72,7 @@
                                 <h4 class="panel-title">Booking Status Distribution</h4>
                             </div>
                             <div class="panel-body">
-                                <canvas id="statusChart" height="250"></canvas>
+                                <canvas id="statusChart" height="200"></canvas>
                             </div>
                         </div>
                     </div>
@@ -82,7 +82,7 @@
                                 <h4 class="panel-title">Monthly Booking Trends</h4>
                             </div>
                             <div class="panel-body">
-                                <canvas id="trendChart" height="250"></canvas>
+                                <canvas id="trendChart" height="200"></canvas>
                             </div>
                         </div>
                     </div>

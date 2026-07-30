@@ -535,10 +535,9 @@ public function updateBooking($id, array $data): array
         $leftActions = '';
         
         // View button - everyone
-        $leftActions .= '<button type="button" class="btn btn-info btn-xs action-btn view-booking" 
+        $leftActions .= '<button type="button" class="action-btn edit-btn view-booking" 
                             data-id="' . $booking->booking_id . '" 
-                            title="View Details"
-                            style="display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; border-radius:4px; border:none; background-color:#17a2b8; color:white; cursor:pointer; transition:all 0.2s;">
+                            title="View Details">
                             <img src="' . asset('images/eye-open.svg') . '" alt="View" width="14" height="14" style="filter: brightness(0) invert(1);">
                         </button>';
         
@@ -549,17 +548,16 @@ public function updateBooking($id, array $data): array
             
             if (!$hasInvoice) {
                 $leftActions .= '<a href="' . route('invoices.create') . '?booking_id=' . $booking->booking_id . '" 
-                                    class="btn btn-success btn-xs action-btn invoice-booking" 
+                                    class="action-btn btn-success invoice-booking" 
                                     data-id="' . $booking->booking_id . '" 
                                     data-ref="' . $booking->booking_ref_no . '"
-                                    title="Generate Invoice"
-                                    style="display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; border-radius:4px; border:none; background-color:#28a745; color:white; cursor:pointer; text-decoration:none; transition:all 0.2s;">
+                                    title="Generate Invoice">
                                     <img src="' . asset('images/invoice.svg') . '" alt="Invoice" width="14" height="14" style="filter: brightness(0) invert(1);">
                                 </a>';
             } else {
-                $leftActions .= '<span class="invoice-exists" 
+                $leftActions .= '<span class="action-btn" 
                                     title="Invoice already generated"
-                                    style="display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:4px; background-color:#6c757d; color:white; opacity:0.6;">
+                                    style="background-color:#6c757d; color:white; opacity:0.6; cursor:default;">
                                     <img src="' . asset('images/invoice-check.svg') . '" alt="Invoice Generated" width="14" height="14" style="filter: brightness(0) invert(1);">
                                 </span>';
             }
@@ -576,8 +574,7 @@ public function updateBooking($id, array $data): array
                                 ' . $statusOptions . '
                             </select>';
         } else {
-            // For users, show status badge only
-            $rightActions = '<span class="label-status label-' . $booking->status . '">' . ucfirst($booking->status) . '</span>';
+            $rightActions = '';
         }
         
 

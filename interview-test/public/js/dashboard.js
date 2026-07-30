@@ -67,7 +67,8 @@ $(document).ready(function() {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
+                aspectRatio: 1.25,
                 plugins: {
                     legend: {
                         position: 'bottom',
@@ -128,7 +129,8 @@ $(document).ready(function() {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
+                aspectRatio: 1.25,
                 plugins: {
                     legend: {
                         display: false

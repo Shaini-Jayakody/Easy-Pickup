@@ -295,7 +295,7 @@ public function index(Request $request)
 public function create(Request $request)
     {
         // Get completed bookings without invoices, with valid relationships
-        $bookings = Booking::where('status', 'completed')
+        $bookings = Booking::whereRaw('LOWER(status) = ?', ['completed'])
             ->whereHas('car')      // Ensure booking has a car
             ->whereHas('user')     // Ensure booking has a user
             ->whereDoesntHave('invoice')

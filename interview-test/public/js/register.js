@@ -361,19 +361,24 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     //EYE TOGGLE
-    document.getElementById('togglePass').addEventListener('click', function() {
-        const isPass = password.type === 'password';
-        password.type = isPass ? 'text' : 'password';
-        passIcon.src = isPass ? EYE_CLOSED : EYE_OPEN;
-        passIcon.alt = isPass ? 'Hide password' : 'Show password';
-    });
+    function setupPasswordToggle(button, input, icon) {
+        if (!button || !input || !icon) {
+            return;
+        }
 
-    document.getElementById('toggleConfirm').addEventListener('click', function() {
-        const isPass = confirmPass.type === 'password';
-        confirmPass.type = isPass ? 'text' : 'password';
-        confirmIcon.src = isPass ? EYE_CLOSED : EYE_OPEN;
-        confirmIcon.alt = isPass ? 'Hide password' : 'Show password';
-    });
+        const eyeOpen = button.getAttribute('data-eye-open') || EYE_OPEN;
+        const eyeClosed = button.getAttribute('data-eye-closed') || EYE_CLOSED;
+
+        button.addEventListener('click', function() {
+            const isPass = input.type === 'password';
+            input.type = isPass ? 'text' : 'password';
+            icon.src = isPass ? eyeClosed : eyeOpen;
+            icon.alt = isPass ? 'Hide password' : 'Show password';
+        });
+    }
+
+    setupPasswordToggle(document.getElementById('togglePass'), password, passIcon);
+    setupPasswordToggle(document.getElementById('toggleConfirm'), confirmPass, confirmIcon);
 
     // FORM SUBMIT
     form.addEventListener('submit', function(e) {

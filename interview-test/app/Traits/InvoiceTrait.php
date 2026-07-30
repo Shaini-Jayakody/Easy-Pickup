@@ -80,9 +80,9 @@ trait InvoiceTrait
      */
     public function calculateDiscount($userId)
     {
-        // Count completed bookings for the user
+        // Count completed bookings for the user (case-insensitive)
         $completedBookings = Booking::where('user_id', $userId)
-            ->where('status', 'completed')
+            ->whereRaw('LOWER(status) = ?', ['completed'])
             ->count();
 
         // Log for debugging
@@ -164,8 +164,8 @@ trait InvoiceTrait
             throw new \Exception('Invoice already exists for this booking.');
         }
 
-        // Check if booking is completed
-        if ($booking->status !== 'completed') {
+        // Check if booking is completed (case-insensitive)
+        if (strtolower((string) $booking->status) !== 'completed') {
             throw new \Exception('Booking must be completed before generating invoice.');
         }
 
@@ -184,7 +184,9 @@ trait InvoiceTrait
         // Log invoice creation
         \Log::info('Creating Invoice:', [
             'user_id' => $booking->user_id,
-            'completed_bookings' => Booking::where('user_id', $booking->user_id)->where('status', 'completed')->count(),
+            'completed_bookings' => Booking::where('user_id', $booking->user_id)
+                ->whereRaw('LOWER(status) = ?', ['completed'])
+                ->count(),
             'discount_percentage' => $details['discount_percentage'],
             'discount_amount' => $details['discount_amount'],
             'base_cost' => $details['base_cost'],

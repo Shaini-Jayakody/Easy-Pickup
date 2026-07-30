@@ -97,7 +97,7 @@ class Invoice extends Model
     public static function calculateDiscount($userId)
     {
         $completedBookings = Booking::where('user_id', $userId)
-            ->where('status', 'completed')
+            ->whereRaw('LOWER(status) = ?', ['completed'])
             ->count();
 
         if ($completedBookings >= 5) {

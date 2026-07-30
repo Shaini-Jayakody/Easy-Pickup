@@ -192,16 +192,16 @@ class BookingInvoiceTestSeeder extends Seeder
 
         $this->command->info('Creating bookings for users...');
 
-        // --- John Doe: 12 bookings (20% discount) ---
+        // --- John Doe: 12 bookings ---
         $this->createBookingsForUser($john, $cars, 12, 'completed');
 
-        // --- Jane Smith: 7 bookings (10% discount) ---
+        // --- Jane Smith: 7 bookings ---
         $this->createBookingsForUser($jane, $cars, 7, 'completed');
 
-        // --- Bob Wilson: 4 bookings (5% discount) ---
+        // --- Bob Wilson: 4 bookings  ---
         $this->createBookingsForUser($bob, $cars, 4, 'completed');
 
-        // --- Alice Brown: 2 bookings (No discount) ---
+        // --- Alice Brown: 2 bookings  ---
         $this->createBookingsForUser($alice, $cars, 2, 'completed');
 
         // --- Also create some pending bookings ---
@@ -211,12 +211,12 @@ class BookingInvoiceTestSeeder extends Seeder
         // --- Create some active bookings ---
         $this->createBookingsForUser($bob, $cars, 1, 'active');
 
-        $this->command->info('✅ Seeding completed successfully!');
-        $this->command->info('📊 Summary:');
-        $this->command->info('   - John Doe: 12 completed bookings (20% discount)');
-        $this->command->info('   - Jane Smith: 7 completed bookings (10% discount)');
-        $this->command->info('   - Bob Wilson: 4 completed bookings (5% discount)');
-        $this->command->info('   - Alice Brown: 2 completed bookings (No discount)');
+        $this->command->info('Seeding completed successfully!');
+        $this->command->info('Summary:');
+        $this->command->info('   - John Doe: 12 completed bookings');
+        $this->command->info('   - Jane Smith: 7 completed bookings');
+        $this->command->info('   - Bob Wilson: 4 completed bookings');
+        $this->command->info('   - Alice Brown: 2 completed bookings ');
         $this->command->info('   - Admin User: 0 completed bookings');
     }
 

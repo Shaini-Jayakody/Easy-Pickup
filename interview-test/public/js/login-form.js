@@ -10,6 +10,30 @@ $(document).ready(function() {
         return $('meta[name="csrf-token"]').attr('content');
     }
 
+    function setupPasswordToggles() {
+        document.querySelectorAll('.eye-toggle').forEach(function(button) {
+            const wrapper = button.closest('.password-wrapper');
+            const input = wrapper ? wrapper.querySelector('input') : null;
+            const icon = button.querySelector('img');
+
+            if (!input || !icon) {
+                return;
+            }
+
+            const eyeOpen = button.getAttribute('data-eye-open') || '/images/eye-open.svg';
+            const eyeClosed = button.getAttribute('data-eye-closed') || '/images/eye-closed.svg';
+
+            button.addEventListener('click', function() {
+                const isPassword = input.type === 'password';
+                input.type = isPassword ? 'text' : 'password';
+                icon.src = isPassword ? eyeClosed : eyeOpen;
+                icon.alt = isPassword ? 'Hide password' : 'Show password';
+            });
+        });
+    }
+
+    setupPasswordToggles();
+
     function updateBookingDetails() {
         const $select = $('#booking_id');
         const selectedOption = $select.find('option:selected');
