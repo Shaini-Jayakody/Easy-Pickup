@@ -137,7 +137,7 @@ $(document).ready(function() {
                     } else {
                         $('#discount-row').hide();
                         $('#preview-discount').text('0.00');
-                        console.log('No Discount Applied');
+                        console.log('No Discount Applied - User has less than 5 completed bookings');
                     }
                     
                     // Fine - Always show (default 0)
@@ -230,9 +230,7 @@ $(document).ready(function() {
         $('#fine-panel').show();
     });
 
-    // ============================================
-    // SHOW FINE PANEL BUTTON - ADD THIS
-    // ============================================
+    // Show fine panel button
     $('#show-fine-btn').on('click', function() {
         $('#fine-panel').toggle();
     });
@@ -249,6 +247,14 @@ $(document).ready(function() {
     
     $('#returned_date').removeAttr('max');
     $('#returned_date').val(defaultDateTime);
+
+    // ============================================
+    // AUTO-LOAD BOOKING IF ID IS PASSED
+    // ============================================
+    if (window.selectedBookingId) {
+        console.log('Pre-selecting booking ID:', window.selectedBookingId);
+        $('#booking_id').val(window.selectedBookingId).trigger('change');
+    }
 
     // ============================================
     // FORM SUBMIT

@@ -50,7 +50,8 @@
                                     data-plate="{{ $booking->car->number_plate ?? 'N/A' }}"
                                     data-price="{{ $booking->car->rent_price_per_hour ?? 0 }}"
                                     data-start="{{ $booking->rental_start_date ?? '' }}"
-                                    data-end="{{ $booking->rental_end_date ?? '' }}">
+                                    data-end="{{ $booking->rental_end_date ?? '' }}"
+                                    {{ isset($selectedBookingId) && $selectedBookingId == $booking->booking_id ? 'selected' : '' }}>
                                     {{ $booking->booking_ref_no ?? 'N/A' }} - 
                                     <strong>{{ $booking->user->name ?? 'N/A' }}</strong> 
                                     ({{ $booking->car->name ?? 'No Car' }} - {{ $booking->car->number_plate ?? 'N/A' }})
@@ -323,5 +324,9 @@
 @endpush
 
 @push('scripts')
+<script>
+    // Pass selected booking ID to JavaScript
+    window.selectedBookingId = {{ $selectedBookingId ?? 'null' }};
+</script>
 <script src="{{ asset('js/invoice-form.js') }}"></script>
 @endpush
