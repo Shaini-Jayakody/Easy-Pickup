@@ -115,40 +115,56 @@ $(document).ready(function() {
         return getSwal() !== null;
     }
 
-    // ===== Delete Car Handler =====
-    $(document).on('click', '.delete-car', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        var carId = $(this).data('id');
-        var carName = $(this).data('name') || 'this car';
-        var $button = $(this);
+  // ===== Delete Car Handler=====
+$(document).on('click', '.delete-car', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Check if button is disabled
+    if ($(this).prop('disabled')) {
+        var title = $(this).attr('title') || 'This car cannot be deleted because it has active bookings.';
         var swal = getSwal();
-        
-        console.log('Delete button clicked - ID:', carId, 'Name:', carName);
-        
         if (isSwalAvailable() && swal) {
             swal.fire({
-                title: 'Are you sure?',
-                html: "You are about to delete <strong>" + carName + "</strong><br>This action cannot be undone!",
                 icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Yes, delete it!',
-                cancelButtonText: 'Cancel'
-            }).then(function(result) {
-                if (result.isConfirmed) {
-                    deleteCar(carId, $button);
-                }
+                title: 'Cannot Delete',
+                text: title,
+                confirmButtonColor: '#d9534f'
             });
         } else {
-            if (confirm('Are you sure you want to delete "' + carName + '"?')) {
+            alert('⚠️ ' + title);
+        }
+        return;
+    }
+    
+    var carId = $(this).data('id');
+    var carName = $(this).data('name') || 'this car';
+    var $button = $(this);
+    var swal = getSwal();
+    
+    console.log('Delete button clicked - ID:', carId, 'Name:', carName);
+    
+    if (isSwalAvailable() && swal) {
+        swal.fire({
+            title: 'Are you sure?',
+            html: "You are about to delete <strong>" + carName + "</strong><br>This action cannot be undone!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        }).then(function(result) {
+            if (result.isConfirmed) {
                 deleteCar(carId, $button);
             }
+        });
+    } else {
+        if (confirm('Are you sure you want to delete "' + carName + '"?')) {
+            deleteCar(carId, $button);
         }
-    });
-
+    }
+});
     // ===== Delete Car AJAX Request =====
     function deleteCar(carId, $button) {
         console.log('Deleting car ID:', carId);

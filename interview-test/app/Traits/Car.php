@@ -5,6 +5,7 @@ namespace App\Traits;
 use App\Models\CarDetail\Car as CarModel;
 use App\Models\CarDetail\CarBrand as Brand;
 use App\Models\CarDetail\CarModel as Model;
+use App\Models\Booking;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -79,6 +80,35 @@ trait Car
         return Model::get();
     }
 
+  /**
+ * Check if car has any bookings
+ */
+public function carHasBookings($carId): bool
+{
+    return Booking::where('car_id', $carId)->exists();
+}
+
+/**
+ * Get active bookings count for a car
+ */
+public function getActiveBookingsCount($carId): int
+{
+    return Booking::where('car_id', $carId)
+        ->whereIn('status', ['pending', 'confirmed', 'active'])
+        ->count();
+}
+
+    /**
+     * Get all bookings for a car
+     */
+    public function getCarBookings($carId)
+    {
+        return Booking::where('car_id', $carId)
+            ->with(['user'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
     // CRUD OPERATIONS
 
     /**
@@ -105,6 +135,13 @@ trait Car
     public function updateCar($id, array $carArray): array
     {
         $car = CarModel::findOrFail($id);
+        
+        // ✅ Check if car has active bookings before updating
+        if ($this->carHasBookings($id)) {
+            $bookingCount = $this->getActiveBookingsCount($id);
+            throw new \Exception("Cannot update car because it has {$bookingCount} active booking(s). Please complete or cancel the bookings first.");
+        }
+        
         $car->update($carArray);
         
         return [
@@ -121,6 +158,13 @@ trait Car
     {
         $car = CarModel::findOrFail($id);
         $carName = $car->name;
+        
+        // ✅ Check if car has active bookings before deleting
+        if ($this->carHasBookings($id)) {
+            $bookingCount = $this->getActiveBookingsCount($id);
+            throw new \Exception("Cannot delete car because it has {$bookingCount} active booking(s). Please complete or cancel the bookings first.");
+        }
+        
         $car->delete();
         
         return [

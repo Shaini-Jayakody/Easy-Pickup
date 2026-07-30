@@ -24,12 +24,10 @@ class CarController extends Controller
         if ($request->ajax()) {
             $cars = $this->getAllCars();
 
-            // Apply brand filter if provided
             if ($request->filled('brand_id')) {
                 $cars = $this->getCarsByBrand($request->brand_id);
             }
             
-            // Determine action column visibility and type based on user role
             $isAdminOrManager = Auth::check() && in_array(Auth::user()->role, ['admin', 'manager']);
             $isAuthenticated = Auth::check();
             
@@ -70,35 +68,55 @@ class CarController extends Controller
                     return $car->chassis_number ?? 'N/A';
                 });
             
-            // ===== ADD ACTION COLUMN FOR AUTHENTICATED USERS =====
             if ($isAuthenticated) {
                 $dataTable->addColumn('action', function($car) use ($isAdminOrManager) {
                     if ($isAdminOrManager) {
-                        $editBtn = '<a href="' . route('car.edit', $car->id) . '" 
-                                    class="action-btn edit-btn" 
-                                    title="Edit Car">
-                                    ' . IconHelper::edit(14) . '
-                                </a>';
+                        // Check if car has bookings
+                        $hasBookings = $this->carHasBookings($car->id);
+                        $bookingCount = $this->getActiveBookingsCount($car->id);
                         
-                        $deleteBtn = '<button class="action-btn delete-car" 
-                                        data-id="' . $car->id . '" 
-                                        data-name="' . $car->name . '" 
-                                        title="Delete Car">
-                                        ' . IconHelper::delete(14) . '
+                        // EDIT BUTTON - Disabled if has bookings
+                        if ($hasBookings) {
+                            $editBtn = '<button class="action-btn edit-btn disabled" 
+                                        disabled 
+                                        title="Cannot edit - Car has ' . $bookingCount . ' active booking(s)">
+                                        ' . IconHelper::edit(14) . '
                                     </button>';
+                        } else {
+                            $editBtn = '<a href="' . route('car.edit', $car->id) . '" 
+                                        class="action-btn edit-btn" 
+                                        title="Edit Car">
+                                        ' . IconHelper::edit(14) . '
+                                    </a>';
+                        }
+                        
+                        // DELETE BUTTON - Disabled if has bookings
+                        if ($hasBookings) {
+                            $deleteBtn = '<button class="action-btn delete-btn disabled" 
+                                            disabled 
+                                            title="Cannot delete - Car has ' . $bookingCount . ' active booking(s)">
+                                            ' . IconHelper::delete(14) . '
+                                        </button>';
+                        } else {
+                            $deleteBtn = '<button class="action-btn delete-car" 
+                                            data-id="' . $car->id . '" 
+                                            data-name="' . $car->name . '" 
+                                            title="Delete Car">
+                                            ' . IconHelper::delete(14) . '
+                                        </button>';
+                        }
                         
                         return '<div class="action-buttons">' . $editBtn . ' ' . $deleteBtn . '</div>';
                     }
 
-                  $rentUrl = route('bookings.create', ['car_id' => $car->id, 'user_id' => Auth::id()]);
-
-return '<a href="' . $rentUrl . '" 
-            class="btn btn-rent btn-xs rent-booking" 
-            data-id="' . $car->id . '" 
-            data-name="' . $car->name . '"
-            title="Rent this car">
-            ' . IconHelper::rent(14) . ' Rent
-        </a>';
+                    $rentUrl = route('bookings.create', ['car_id' => $car->id, 'user_id' => Auth::id()]);
+                    return '<a href="' . $rentUrl . '" 
+                                class="btn btn-rent btn-xs rent-booking" 
+                                data-id="' . $car->id . '" 
+                                data-name="' . $car->name . '"
+                                title="Rent this car">
+                                ' . IconHelper::rent(14) . ' Rent
+                            </a>';
                 });
                 $dataTable->rawColumns(['color', 'action']);
             } else {
@@ -138,6 +156,13 @@ return '<a href="' . $rentUrl . '"
         }
 
         $car = $this->getCarById($id);
+        
+        // Check if car has bookings before editing
+        if ($this->carHasBookings($id)) {
+            $bookingCount = $this->getActiveBookingsCount($id);
+            return redirect()->route('car')->with('error', 'Cannot edit car because it has ' . $bookingCount . ' active booking(s). Please complete or cancel the bookings first.');
+        }
+
         $brands = $this->getBrandsForSelect();
         $models = $this->getModelsForSelect();
         
@@ -188,6 +213,15 @@ return '<a href="' . $rentUrl . '"
         }
 
         try {
+            // Check if car has bookings before updating
+            if ($this->carHasBookings($id)) {
+                $bookingCount = $this->getActiveBookingsCount($id);
+                return response()->json([
+                    'success' => false,
+                    'message' => "Cannot update car because it has {$bookingCount} active booking(s). Please complete or cancel the bookings first."
+                ], 422);
+            }
+
             $validated = $this->validateCarData($request->all(), $id);
         } catch (ValidationException $e) {
             return response()->json([
@@ -219,6 +253,15 @@ return '<a href="' . $rentUrl . '"
                     'success' => false,
                     'message' => 'You do not have permission to delete cars.'
                 ], 403);
+            }
+
+            // Check if car has bookings before deleting
+            if ($this->carHasBookings($id)) {
+                $bookingCount = $this->getActiveBookingsCount($id);
+                return response()->json([
+                    'success' => false,
+                    'message' => "Cannot delete car because it has {$bookingCount} active booking(s). Please complete or cancel the bookings first."
+                ], 422);
             }
 
             $result = $this->deleteCar($id);
