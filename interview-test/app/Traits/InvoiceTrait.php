@@ -85,6 +85,11 @@ trait InvoiceTrait
             ->where('status', 'completed')
             ->count();
 
+        \Log::info('Discount Calculation:', [
+            'user_id' => $userId,
+            'completed_bookings' => $completedBookings,
+        ]);
+
         // Apply discount based on number of completed bookings
         if ($completedBookings >= 5) {
             return [
@@ -173,6 +178,15 @@ trait InvoiceTrait
         $totalCost = ($details['base_cost'] + $details['extra_cost']) 
             - $details['discount_amount'] 
             + $fineAmount;
+
+        \Log::info('Creating Invoice:', [
+            'base_cost' => $details['base_cost'],
+            'extra_cost' => $details['extra_cost'],
+            'discount_amount' => $details['discount_amount'],
+            'fine_amount' => $fineAmount,
+            'fine_reason' => $fineReason,
+            'total_cost' => $totalCost,
+        ]);
 
         // Create invoice
         $invoice = Invoice::create([

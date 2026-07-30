@@ -60,8 +60,10 @@
                         <span class="help-block text-danger error-msg" id="booking_id-error"></span>
                     </div>
 
-                    <!-- Customer Details -->
-                    <div class="panel panel-default invoice-panel" id="customer-details-panel">
+                    <!-- ============================================ -->
+                    <!-- CUSTOMER DETAILS - Hidden by default -->
+                    <!-- ============================================ -->
+                    <div class="panel panel-default invoice-panel" id="customer-details-panel" style="display:none;">
                         <div class="panel-heading">
                             <h4 class="panel-title">Customer Details</h4>
                         </div>
@@ -97,8 +99,10 @@
                         </div>
                     </div>
 
-                    <!-- Car Details -->
-                    <div class="panel panel-default invoice-panel" id="car-details-panel">
+                    <!-- ============================================ -->
+                    <!-- CAR DETAILS - Hidden by default -->
+                    <!-- ============================================ -->
+                    <div class="panel panel-default invoice-panel" id="car-details-panel" style="display:none;">
                         <div class="panel-heading">
                             <h4 class="panel-title">Car Details</h4>
                         </div>
@@ -154,7 +158,9 @@
                         </div>
                     </div>
 
-                    <!-- Returned Date -->
+                    <!-- ============================================ -->
+                    <!-- RETURNED DATE - Input -->
+                    <!-- ============================================ -->
                     <div class="form-group">
                         <label for="returned_date">Returned Date & Time <span class="text-danger">*</span></label>
                         <input type="datetime-local" class="form-control" name="returned_date" id="returned_date" required>
@@ -162,16 +168,15 @@
                     </div>
 
                     <!-- ============================================ -->
-                    <!-- INVOICE PREVIEW - All sections visible -->
+                    <!-- INVOICE PREVIEW - Hidden by default -->
                     <!-- ============================================ -->
-                    <div id="invoice-preview" class="invoice-preview-container">
+                    <div id="invoice-preview" class="invoice-preview-container" style="display:none;">
                         <div class="panel panel-info">
                             <div class="panel-heading">
                                 <h4 class="panel-title">Invoice Preview</h4>
                             </div>
                             <div class="panel-body">
                                 <div class="row">
-                                    <!-- Left Column - Hours & Pricing -->
                                     <div class="col-md-6">
                                         <table class="table table-condensed table-striped invoice-preview-table">
                                             <tbody>
@@ -198,8 +203,6 @@
                                             </tbody>
                                         </table>
                                     </div>
-                                    
-                                    <!-- Right Column - Costs -->
                                     <div class="col-md-6">
                                         <table class="table table-condensed table-striped invoice-preview-table">
                                             <tbody>
@@ -211,7 +214,7 @@
                                                     <td><strong>Extra Cost:</strong></td>
                                                     <td class="text-right">Rs. <span id="preview-extra-cost">0.00</span></td>
                                                 </tr>
-                                                <tr id="discount-row">
+                                                <tr id="discount-row" style="display:none;">
                                                     <td><strong>Discount:</strong></td>
                                                     <td class="text-right"><span id="preview-discount-label">0%</span> (Rs. <span id="preview-discount">0.00</span>)</td>
                                                 </tr>
@@ -235,9 +238,18 @@
                     </div>
 
                     <!-- ============================================ -->
-                    <!-- ADDITIONAL CHARGES / FINE - Input Section -->
+                    <!-- ADDITIONAL CHARGES / FINE - Button to show -->
                     <!-- ============================================ -->
-                    <div class="panel panel-warning fine-panel" id="fine-panel">
+                    <div class="form-group" style="margin-top:15px;">
+                        <button type="button" class="btn btn-warning btn-sm" id="show-fine-btn">
+                            <span class="glyphicon glyphicon-plus"></span> Add Additional Charges / Fine
+                        </button>
+                    </div>
+
+                    <!-- ============================================ -->
+                    <!-- ADDITIONAL CHARGES / FINE - Hidden by default -->
+                    <!-- ============================================ -->
+                    <div class="panel panel-warning fine-panel" id="fine-panel" style="display:none;">
                         <div class="panel-heading">
                             <h4 class="panel-title">
                                 <span class="glyphicon glyphicon-warning-sign"></span> Additional Charges / Fine
@@ -248,7 +260,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="fine_amount">Amount (Rs.)</label>
-                                        <input type="number" class="form-control" name="fine_amount" id="fine_amount" step="0.01" min="0" placeholder="0.00">
+                                        <input type="number" class="form-control" name="fine_amount" id="fine_amount" step="0.01" min="0" placeholder="0.00" value="0">
                                         <span class="help-block text-danger error-msg" id="fine_amount-error"></span>
                                     </div>
                                 </div>
@@ -260,14 +272,16 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="alert alert-info fine-info-alert">
+                            <div class="alert alert-info fine-info-alert" style="margin-top:10px;">
                                 <span class="glyphicon glyphicon-info-sign"></span>
                                 <strong>Note:</strong> Add any additional charges such as damage fees, cleaning fees, or other fines here.
                             </div>
                         </div>
                     </div>
 
-                    <!-- Payment Details -->
+                    <!-- ============================================ -->
+                    <!-- PAYMENT DETAILS -->
+                    <!-- ============================================ -->
                     <div class="form-group">
                         <label for="payment_method">Payment Method <span class="text-danger">*</span></label>
                         <select class="form-control" name="payment_method" id="payment_method" required>
@@ -285,12 +299,14 @@
                         <span class="help-block text-danger error-msg" id="notes-error"></span>
                     </div>
 
-                    <!-- Form Actions -->
+                    <!-- ============================================ -->
+                    <!-- FORM ACTIONS -->
+                    <!-- ============================================ -->
                     <div class="form-group invoice-form-actions">
                         <a href="{{ route('invoices.index') }}" class="btn btn-default">Cancel</a>
                         <button type="submit" class="btn btn-success pull-right" id="submit-btn" disabled>
                             <span id="submit-text">Generate Invoice</span>
-                            <span id="submit-spinner" class="hidden">
+                            <span id="submit-spinner" style="display:none;">
                                 <span class="spinner-border spinner-border-sm" role="status"></span> Processing...
                             </span>
                         </button>

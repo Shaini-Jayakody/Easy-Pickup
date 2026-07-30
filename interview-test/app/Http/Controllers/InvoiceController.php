@@ -19,83 +19,84 @@ class InvoiceController extends Controller
     /**
      * Display a listing of invoices
      */
-    public function index(Request $request)
-    {
-        if ($request->ajax()) {
-            // Get invoices based on user role
-            if ($this->hasInvoicePermission()) {
-                // Admin/Manager sees ALL invoices
-                $invoices = Invoice::with(['booking', 'user', 'car'])
-                    ->orderBy('created_at', 'desc');
-                
-                // Apply admin filters
-                $invoices = $this->applyInvoiceFilters($invoices, $request);
-            } else {
-                // Regular users see only their own invoices
-                $invoices = Invoice::with(['booking', 'user', 'car'])
-                    ->where('user_id', Auth::id())
-                    ->orderBy('created_at', 'desc');
-                
-                // Apply basic filters for users
-                $invoices = $this->applyUserInvoiceFilters($invoices, $request);
-            }
+public function index(Request $request)
+{
+    if ($request->ajax()) {
+        // Get invoices based on user role
+        if ($this->hasInvoicePermission()) {
+            // Admin/Manager sees ALL invoices
+            $invoices = Invoice::with(['booking', 'user', 'car'])
+                ->orderBy('created_at', 'desc');
             
-            return DataTables::of($invoices)
-                ->addIndexColumn()
-                ->addColumn('customer_name', function($invoice) {
-                    return $invoice->user->name ?? 'N/A';
-                })
-                ->addColumn('customer_nic', function($invoice) {
-                    return $invoice->user->id_num ?? 'N/A';
-                })
-                ->addColumn('car_info', function($invoice) {
-                    return $invoice->car->name . ' (' . $invoice->car->number_plate . ')';
-                })
-                ->addColumn('booking_ref', function($invoice) {
-                    return $invoice->booking->booking_ref_no ?? 'N/A';
-                })
-                ->addColumn('total_cost', function($invoice) {
-                    return 'Rs. ' . number_format($invoice->total_cost, 2);
-                })
-                ->addColumn('status', function($invoice) {
-                    $badgeClass = $invoice->getStatusBadgeClass();
-                    $statusText = ucfirst($invoice->payment_status);
-                    return '<span class="label ' . $badgeClass . '">' . $statusText . '</span>';
-                })
-                ->addColumn('payment_method', function($invoice) {
-                    return ucfirst($invoice->payment_method ?? 'N/A');
-                })
-                ->addColumn('action', function($invoice) {
-                    $actions = '<div class="action-buttons">';
-                    
-                    // View button
-                    $actions .= '<a href="#" class="action-btn btn-info view-invoice" data-id="' . $invoice->invoice_id . '" title="View Invoice">
-                                <span class="glyphicon glyphicon-eye-open"></span>
-                            </a> ';
-                    
-                    // Print button
-                    $actions .= '<a href="#" class="action-btn btn-success print-invoice" data-id="' . $invoice->invoice_id . '" title="Print Invoice">
-                                <span class="glyphicon glyphicon-print"></span>
-                            </a> ';
-                    
-                    // Admin/Manager: Status change dropdown
-                    if ($this->hasInvoicePermission()) {
-                        $actions .= $this->getInvoiceStatusDropdown($invoice);
-                    }
-                    
-                    $actions .= '</div>';
-                    return $actions;
-                })
-                ->rawColumns(['status', 'action'])
-                ->make(true);
+            // Apply admin filters
+            $invoices = $this->applyInvoiceFilters($invoices, $request);
+        } else {
+            // Regular users see only their own invoices
+            $invoices = Invoice::with(['booking', 'user', 'car'])
+                ->where('user_id', Auth::id())
+                ->orderBy('created_at', 'desc');
+            
+            // Apply basic filters for users
+            $invoices = $this->applyUserInvoiceFilters($invoices, $request);
         }
-
-        // Get cars for filter dropdown
-        $cars = Car::with('model.brand')->where('id', '>', 0)->get();
         
-        return view('invoices.index', compact('cars'));
+        return DataTables::of($invoices)
+            ->addIndexColumn()
+            ->addColumn('customer_name', function($invoice) {
+                return $invoice->user->name ?? 'N/A';
+            })
+            ->addColumn('customer_nic', function($invoice) {
+                return $invoice->user->id_num ?? 'N/A';
+            })
+            ->addColumn('car_info', function($invoice) {
+                $carName = $invoice->car->name ?? 'N/A';
+                $carPlate = $invoice->car->number_plate ?? 'N/A';
+                return $carName . ' (' . $carPlate . ')';
+            })
+            ->addColumn('booking_ref', function($invoice) {
+                return $invoice->booking->booking_ref_no ?? 'N/A';
+            })
+            ->addColumn('total_cost', function($invoice) {
+                return 'Rs. ' . number_format($invoice->total_cost ?? 0, 2);
+            })
+            ->addColumn('status', function($invoice) {
+                $badgeClass = $invoice->getStatusBadgeClass();
+                $statusText = ucfirst($invoice->payment_status ?? 'pending');
+                return '<span class="label ' . $badgeClass . '">' . $statusText . '</span>';
+            })
+            ->addColumn('payment_method', function($invoice) {
+                return ucfirst($invoice->payment_method ?? 'N/A');
+            })
+            ->addColumn('action', function($invoice) {
+                $actions = '<div class="action-buttons">';
+                
+                // View button
+                $actions .= '<a href="#" class="action-btn btn-info view-invoice" data-id="' . $invoice->invoice_id . '" title="View Invoice">
+                            <span class="glyphicon glyphicon-eye-open"></span>
+                        </a> ';
+                
+                // Print button
+                $actions .= '<a href="#" class="action-btn btn-success print-invoice" data-id="' . $invoice->invoice_id . '" title="Print Invoice">
+                            <span class="glyphicon glyphicon-print"></span>
+                        </a> ';
+                
+                // Admin/Manager: Status change dropdown
+                if ($this->hasInvoicePermission()) {
+                    $actions .= $this->getInvoiceStatusDropdown($invoice);
+                }
+                
+                $actions .= '</div>';
+                return $actions;
+            })
+            ->rawColumns(['status', 'action'])
+            ->make(true);
     }
 
+    // Get cars for filter dropdown
+    $cars = Car::with('model.brand')->where('id', '>', 0)->get();
+    
+    return view('invoices.index', compact('cars'));
+}
     /**
      * Check if user has permission to manage invoices
      */
@@ -393,34 +394,40 @@ public function getBookingDetails(Request $request)
     /**
      * Store a newly created invoice (Admin/Manager only)
      */
-    public function store(Request $request)
-    {
-        // Restrict to admin/manager only
-        if (!$this->hasInvoicePermission()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You do not have permission to create invoices.'
-            ], 403);
-        }
-
-        try {
-            $validated = $this->validateInvoiceData($request->all());
-            $result = $this->createInvoice($validated);
-            return response()->json($result);
-
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'errors' => $e->validator->errors()->all()
-            ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error creating invoice: ' . $e->getMessage()
-            ], 500);
-        }
+public function store(Request $request)
+{
+    // Restrict to admin/manager only
+    if (!$this->hasInvoicePermission()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'You do not have permission to create invoices.'
+        ], 403);
     }
 
+    try {
+        $validated = $this->validateInvoiceData($request->all());
+        
+        // Log fine data for debugging
+        \Log::info('Invoice store data:', [
+            'fine_amount' => $request->fine_amount,
+            'fine_reason' => $request->fine_reason,
+        ]);
+        
+        $result = $this->createInvoice($validated);
+        return response()->json($result);
+
+    } catch (ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'errors' => $e->validator->errors()->all()
+        ], 422);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error creating invoice: ' . $e->getMessage()
+        ], 500);
+    }
+}
     /**
      * Display invoice details
      */
@@ -444,15 +451,15 @@ public function getBookingDetails(Request $request)
     /**
      * Print invoice
      */
-    public function print($id)
-    {
-        $invoice = Invoice::with(['booking', 'user', 'car'])->findOrFail($id);
-        
-        // Check if user has access to this invoice
-        if (!$this->hasInvoicePermission() && $invoice->user_id !== Auth::id()) {
-            abort(403, 'You do not have access to this invoice.');
-        }
-        
-        return view('invoices.print', compact('invoice'));
+public function print($id)
+{
+    $invoice = Invoice::with(['booking', 'user', 'car'])->findOrFail($id);
+    
+    // Check if user has access to this invoice
+    if (!$this->hasInvoicePermission() && $invoice->user_id !== Auth::id()) {
+        abort(403, 'You do not have access to this invoice.');
     }
+    
+    return view('invoices.print', compact('invoice'));
+}
 }

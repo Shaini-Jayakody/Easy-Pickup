@@ -47,7 +47,6 @@ $(document).ready(function() {
             
             // Set min date for returned date (must be after start date)
             if (start) {
-                // Format the start date for datetime-local input (YYYY-MM-DDTHH:mm)
                 const startDate = new Date(start);
                 const formattedStart = startDate.getFullYear() + '-' + 
                     String(startDate.getMonth() + 1).padStart(2, '0') + '-' + 
@@ -57,10 +56,8 @@ $(document).ready(function() {
                 $('#returned_date').attr('min', formattedStart);
             }
             
-            // Remove max attribute to allow any date after start
             $('#returned_date').removeAttr('max');
             
-            // Set default returned date to now
             const now = new Date();
             const defaultDateTime = now.getFullYear() + '-' + 
                 String(now.getMonth() + 1).padStart(2, '0') + '-' + 
@@ -69,10 +66,8 @@ $(document).ready(function() {
                 String(now.getMinutes()).padStart(2, '0');
             $('#returned_date').val(defaultDateTime);
             
-            // Always show invoice preview when booking is selected
             $('#invoice-preview').show();
             
-            // Call preview to load data
             previewInvoice();
         } else {
             $('#customer-details-panel').hide();
@@ -87,7 +82,6 @@ $(document).ready(function() {
         const returnedDate = $('#returned_date').val();
         
         if (!bookingId || !returnedDate) {
-            // Show preview with default values if no date selected yet
             $('#invoice-preview').show();
             $('#preview-expected-hours').text('0');
             $('#preview-actual-hours').text('0');
@@ -100,11 +94,11 @@ $(document).ready(function() {
             $('#preview-fine').text('0.00');
             $('#preview-total').text('0.00');
             $('#discount-row').hide();
+            $('#fine-panel').hide();
             updateSubmitButton();
             return;
         }
         
-        // Show calculating state
         $('#preview-total').text('Calculating...');
         
         $.ajax({
@@ -121,40 +115,32 @@ $(document).ready(function() {
                     
                     console.log('Invoice Details:', d);
                     
-                    // ============================================
-                    // HOURS SECTION - Always show
-                    // ============================================
+                    // Hours Section
                     $('#preview-expected-hours').text(d.expected_hours);
                     $('#preview-actual-hours').text(d.actual_hours);
                     $('#preview-extra-hours').text(d.extra_hours);
                     
-                    // ============================================
-                    // PRICING SECTION - Always show
-                    // ============================================
+                    // Pricing Section
                     $('#preview-price').text(d.price_per_hour.toFixed(2));
                     $('#preview-extra-rate').text(d.extra_hour_rate.toFixed(2));
                     
-                    // ============================================
-                    // COST SECTION - Always show
-                    // ============================================
+                    // Cost Section
                     $('#preview-base-cost').text(d.base_cost.toFixed(2));
                     $('#preview-extra-cost').text(d.extra_cost.toFixed(2));
                     
-                    // ============================================
-                    // DISCOUNT - ONLY SHOW IF > 0
-                    // ============================================
+                    // Discount - Only show if > 0
                     if (d.has_discount && d.discount_percentage > 0) {
                         $('#discount-row').show();
                         $('#preview-discount-label').text(d.discount_percentage + '% (' + d.discount_label + ')');
                         $('#preview-discount').text(d.discount_amount.toFixed(2));
+                        console.log('Discount Applied:', d.discount_percentage + '% - ' + d.discount_label);
                     } else {
                         $('#discount-row').hide();
                         $('#preview-discount').text('0.00');
+                        console.log('No Discount Applied');
                     }
                     
-                    // ============================================
-                    // FINE - Always show (default 0)
-                    // ============================================
+                    // Fine - Always show (default 0)
                     $('#preview-fine').text('0.00');
                     $('#fine-reason-display').text('');
                     
@@ -163,16 +149,12 @@ $(document).ready(function() {
                     $('#fine_reason').val('');
                     $('#fine-panel').hide();
                     
-                    // ============================================
-                    // TOTAL - Always show
-                    // ============================================
+                    // Total
                     $('#preview-total').text(d.total_cost.toFixed(2));
                     
-                    // Show preview
                     $('#invoice-preview').show();
                     updateSubmitButton();
                 } else {
-                    // Show error in preview
                     $('#preview-total').text('Error');
                     updateSubmitButton();
                 }
@@ -237,17 +219,26 @@ $(document).ready(function() {
         $('#payment_method-error').hide();
     });
 
-    // Fine amount changes - recalculate total
+    // Fine amount changes - recalculate total and show panel
     $('#fine_amount').on('focus', function() {
         $('#fine-panel').show();
     });
 
     $('#fine_amount, #fine_reason').on('change keyup', function() {
         recalculateTotalWithFine();
+        // Show panel if user is typing
+        $('#fine-panel').show();
     });
 
     // ============================================
-    // SET DEFAULT RETURNED DATE - REMOVE MAX
+    // SHOW FINE PANEL BUTTON - ADD THIS
+    // ============================================
+    $('#show-fine-btn').on('click', function() {
+        $('#fine-panel').toggle();
+    });
+
+    // ============================================
+    // SET DEFAULT RETURNED DATE
     // ============================================
     const now = new Date();
     const defaultDateTime = now.getFullYear() + '-' + 
@@ -256,7 +247,6 @@ $(document).ready(function() {
         String(now.getHours()).padStart(2, '0') + ':' + 
         String(now.getMinutes()).padStart(2, '0');
     
-    // Remove max attribute to avoid validation errors
     $('#returned_date').removeAttr('max');
     $('#returned_date').val(defaultDateTime);
 
@@ -291,6 +281,13 @@ $(document).ready(function() {
         $('#submit-spinner').show();
         $('#submit-btn').prop('disabled', true);
         
+        // Get fine amount and reason
+        const fineAmount = $('#fine_amount').val() || 0;
+        const fineReason = $('#fine_reason').val() || null;
+        
+        console.log('Fine Amount:', fineAmount);
+        console.log('Fine Reason:', fineReason);
+        
         $.ajax({
             url: '/invoices/store',
             type: 'POST',
@@ -299,8 +296,8 @@ $(document).ready(function() {
                 returned_date: $('#returned_date').val(),
                 payment_method: $('#payment_method').val(),
                 notes: $('#notes').val(),
-                fine_amount: $('#fine_amount').val() || 0,
-                fine_reason: $('#fine_reason').val() || null,
+                fine_amount: fineAmount,
+                fine_reason: fineReason,
                 _token: getCsrfToken()
             },
             dataType: 'json',
@@ -358,9 +355,8 @@ $(document).ready(function() {
     });
 
     // ============================================
-    // INITIAL SETUP - Show preview with default values
+    // INITIAL SETUP
     // ============================================
-    // Show invoice preview container immediately with default values
     $('#invoice-preview').show();
     $('#preview-expected-hours').text('0');
     $('#preview-actual-hours').text('0');
@@ -373,6 +369,7 @@ $(document).ready(function() {
     $('#preview-fine').text('0.00');
     $('#preview-total').text('0.00');
     $('#discount-row').hide();
+    $('#fine-panel').hide();
 
     console.log('Invoice form initialized successfully!');
 });
