@@ -11,10 +11,14 @@ class CarBrand extends Model
     use HasFactory;
 
     protected $table = 'tbl_car_brands';
+    public $timestamps = false; 
+
+    protected $fillable = [
+        'name'
+    ];
 
     public function models()
     {
-        return $this->hasMany(CarModel::class,'brand_id');
+        return $this->hasMany(CarModel::class, 'brand_id', 'id');
     }
-
 }

@@ -1,0 +1,208 @@
+<?php
+
+namespace App\Traits;
+
+use App\Models\Invoice;
+use App\Models\Booking;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Validator;
+
+trait InvoiceTrait
+{
+    /**
+     * Calculate invoice details based on booking and returned date
+     */
+public function calculateInvoiceDetails($bookingId, $returnedDate)
+{
+    $booking = Booking::with(['user', 'car'])->findOrFail($bookingId);
+    
+    $startDate = Carbon::parse($booking->rental_start_date);
+    $endDate = Carbon::parse($booking->rental_end_date);
+    $returned = Carbon::parse($returnedDate);
+    
+    // Calculate hours
+    $expectedHours = $startDate->diffInHours($endDate);
+    $actualHours = $startDate->diffInHours($returned);
+    $extraHours = max(0, $actualHours - $expectedHours);
+    
+    // Pricing
+    $pricePerHour = $booking->car->rent_price_per_hour ?? 0;
+    $extraHourRate = $pricePerHour * 2; // Double for extra hours
+    
+    // Costs
+    $baseCost = $expectedHours * $pricePerHour;
+    $extraCost = $extraHours * $extraHourRate;
+    
+    // Discount based on user history (3, 5, 10+ completed bookings)
+    $discount = Invoice::calculateDiscount($booking->user_id);
+    $discountPercentage = $discount['percentage'];
+    $discountAmount = ($baseCost + $extraCost) * ($discountPercentage / 100);
+    
+    // Fine for late return (if extra hours > 0)
+    $fineAmount = 0;
+    $fineReason = null;
+    if ($extraHours > 0) {
+        $fineAmount = $extraCost * 0.10; // 10% fine on extra cost
+        $fineReason = 'Late return by ' . number_format($extraHours, 2) . ' hours';
+    }
+    
+    // Total cost
+    $totalCost = ($baseCost + $extraCost) - $discountAmount + $fineAmount;
+    
+    return [
+        'booking' => $booking,
+        'expected_hours' => $expectedHours,
+        'actual_hours' => $actualHours,
+        'extra_hours' => $extraHours,
+        'price_per_hour' => $pricePerHour,
+        'extra_hour_rate' => $extraHourRate,
+        'base_cost' => $baseCost,
+        'extra_cost' => $extraCost,
+        'discount_percentage' => $discountPercentage,
+        'discount_amount' => $discountAmount,
+        'discount_label' => $discount['label'],
+        'fine_amount' => $fineAmount,
+        'fine_reason' => $fineReason,
+        'total_cost' => $totalCost,
+    ];
+}
+
+
+    /**
+     * Validate invoice data
+     */
+    public function validateInvoiceData(array $data)
+    {
+        $rules = [
+            'booking_id' => ['required', 'exists:tbl_bookings,booking_id'],
+            'returned_date' => ['required', 'date'],
+            'payment_method' => ['required', 'in:cash,card,bank_transfer'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ];
+
+        $messages = [
+            'booking_id.required' => 'Please select a booking.',
+            'booking_id.exists' => 'Selected booking does not exist.',
+            'returned_date.required' => 'Please enter the return date.',
+            'returned_date.date' => 'Please enter a valid date.',
+            'payment_method.required' => 'Please select a payment method.',
+            'payment_method.in' => 'Invalid payment method selected.',
+        ];
+
+        $validator = Validator::make($data, $rules, $messages);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        // Additional validation: returned date must be after rental start
+        $booking = Booking::find($data['booking_id']);
+        if ($booking) {
+            $startDate = Carbon::parse($booking->rental_start_date);
+            $returnedDate = Carbon::parse($data['returned_date']);
+            
+            if ($returnedDate->lessThan($startDate)) {
+                throw new \Exception('Returned date cannot be before rental start date.');
+            }
+        }
+
+        return $validator->validated();
+    }
+
+    /**
+     * Create invoice
+     */
+    public function createInvoice(array $data)
+    {
+        $booking = Booking::with(['user', 'car'])->findOrFail($data['booking_id']);
+        
+        // Check if invoice already exists for this booking
+        $existingInvoice = Invoice::where('booking_id', $data['booking_id'])->first();
+        if ($existingInvoice) {
+            throw new \Exception('Invoice already exists for this booking.');
+        }
+
+        // Check if booking is completed
+        if ($booking->status !== 'completed') {
+            throw new \Exception('Booking must be completed before generating invoice.');
+        }
+
+        // Calculate invoice details
+        $details = $this->calculateInvoiceDetails($data['booking_id'], $data['returned_date']);
+
+        // Create invoice
+        $invoice = Invoice::create([
+            'invoice_ref_no' => Invoice::generateReference(),
+            'booking_id' => $data['booking_id'],
+            'user_id' => $booking->user_id,
+            'car_id' => $booking->car_id,
+            'returned_date' => $data['returned_date'],
+            'actual_hours' => $details['actual_hours'],
+            'extra_cost' => $details['extra_cost'],
+            'discount_amount' => $details['discount_amount'],
+            'discount_percentage' => $details['discount_percentage'],
+            'fine_amount' => $details['fine_amount'],
+            'fine_reason' => $details['fine_reason'],
+            'total_cost' => $details['total_cost'],
+            'payment_status' => 'paid', // Issue invoice when paid
+            'payment_method' => $data['payment_method'],
+            'paid_at' => now(),
+            'notes' => $data['notes'] ?? null,
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Invoice created successfully! Reference: ' . $invoice->invoice_ref_no,
+            'invoice' => $invoice
+        ];
+    }
+
+    /**
+     * Format invoice for response (with related data)
+     */
+    public function formatInvoiceForResponse($invoice)
+    {
+        return [
+            'id' => $invoice->invoice_id,
+            'ref_no' => $invoice->invoice_ref_no,
+            'booking_ref' => $invoice->booking->booking_ref_no ?? null,
+            'customer' => [
+                'name' => $invoice->user->name ?? null,
+                'nic' => $invoice->user->id_num ?? null,
+                'email' => $invoice->user->email ?? null,
+            ],
+            'car' => [
+                'name' => $invoice->car->name ?? null,
+                'ref_no' => $invoice->car->ref_no ?? null,
+                'number_plate' => $invoice->car->number_plate ?? null,
+                'price_per_hour' => $invoice->car->rent_price_per_hour ?? null,
+            ],
+            'rental' => [
+                'start_date' => $invoice->booking->rental_start_date ?? null,
+                'end_date' => $invoice->booking->rental_end_date ?? null,
+                'returned_date' => $invoice->returned_date,
+                'actual_hours' => $invoice->actual_hours,
+                'expected_hours' => $invoice->booking ? $invoice->booking->getDurationInHours() : 0,
+                'extra_hours' => max(0, $invoice->actual_hours - ($invoice->booking ? $invoice->booking->getDurationInHours() : 0)),
+            ],
+            'cost' => [
+                'base_cost' => $invoice->booking ? ($invoice->booking->getDurationInHours() * ($invoice->car->rent_price_per_hour ?? 0)) : 0,
+                'extra_cost' => $invoice->extra_cost,
+                'discount_amount' => $invoice->discount_amount,
+                'discount_percentage' => $invoice->discount_percentage,
+                'fine_amount' => $invoice->fine_amount,
+                'fine_reason' => $invoice->fine_reason,
+                'total_cost' => $invoice->total_cost,
+            ],
+            'payment' => [
+                'status' => $invoice->payment_status,
+                'method' => $invoice->payment_method,
+                'paid_at' => $invoice->paid_at,
+            ],
+            'notes' => $invoice->notes,
+            'created_at' => $invoice->created_at,
+        ];
+    }
+}

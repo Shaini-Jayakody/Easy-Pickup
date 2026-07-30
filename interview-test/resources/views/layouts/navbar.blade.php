@@ -47,28 +47,28 @@
                         </a>
                     </li>
                     <li class="{{ request()->routeIs('invoices*') ? 'active' : '' }}">
-                        <a href="#">
+                        <a href="/invoices">
                             <span class="glyphicon glyphicon-file"></span> Invoices
                         </a>
                     </li>
                 @endauth
                 
-                <!-- Admin Dropdown - Only for Admin/Manager -->
-                @auth
-                    @if(in_array(Auth::user()->role, ['admin', 'manager']))
-                        <li class="dropdown">
-                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
-                                <span class="glyphicon glyphicon-cog"></span> Admin <span class="caret"></span>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a href="#"><span class="glyphicon glyphicon-user"></span> Manage Users</a></li>
-                                <li><a href="#"><span class="glyphicon glyphicon-stats"></span> Reports</a></li>
-                                <li role="separator" class="divider"></li>
-                                <li><a href="#"><span class="glyphicon glyphicon-cog"></span> Settings</a></li>
-                            </ul>
-                        </li>
-                    @endif
-                @endauth
+              <!-- management Dropdown-->
+@auth
+    @if(in_array(Auth::user()->role, ['admin', 'manager']))
+        <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                <span class="glyphicon glyphicon-cog"></span> Manage <span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu">
+                <li><a href="{{ route('car.brands.index') }}"><span class="glyphicon glyphicon-tag"></span> Car Brands</a></li>
+                <li><a href="{{ route('car.models.index') }}"><span class="glyphicon glyphicon-list-alt"></span> Car Models</a></li>
+                <li role="separator" class="divider"></li>
+                <li><a href="#"><span class="glyphicon glyphicon-stats"></span> Reports</a></li>
+            </ul>
+        </li>
+    @endif
+@endauth
             </ul>
 
             <!-- Right Side - User Profile Dropdown -->

@@ -40,6 +40,11 @@ class Booking extends Model
         return $this->belongsTo(Car::class, 'car_id', 'id');
     }
 
+    public function invoice()
+    {
+        return $this->hasOne(Invoice::class, 'booking_id', 'booking_id');
+    }
+    
     // Helper methods
     public function isPending()
     {

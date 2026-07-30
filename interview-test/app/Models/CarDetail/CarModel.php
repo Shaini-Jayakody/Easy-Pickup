@@ -12,15 +12,21 @@ class CarModel extends Model
     use HasFactory;
 
     protected $table = 'tbl_car_models';
+    public $timestamps = false;
+
+    protected $fillable = [
+        'name',
+        'year',
+        'brand_id'
+    ];
 
     public function brand()
     {
-        return $this->belongsTo(CarBrand::class,'brand_id','id');
+        return $this->belongsTo(CarBrand::class, 'brand_id', 'id');
     }
 
     public function cars()
     {
-        return $this->hasMany(Car::class,'model_id');
+        return $this->hasMany(Car::class, 'model_id', 'id');
     }
-
 }

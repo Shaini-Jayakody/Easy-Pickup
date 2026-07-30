@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Response;
 require __DIR__.'/auth.php';
 require __DIR__.'/car-details/car.php';
 require __DIR__.'/booking.php';
-
+require __DIR__.'/invoice.php';
+require __DIR__.'/car-details/brand-model.php';
 
 // CSS ROUTE
 Route::get('/css/app.css', function () {
