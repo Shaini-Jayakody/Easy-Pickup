@@ -291,26 +291,22 @@ class InvoiceController extends Controller
     /**
      * Show the form for creating a new invoice (Admin/Manager only)
      */
-public function create()
-{
-    // Restrict to admin/manager only
-    if (!$this->hasInvoicePermission()) {
-        return redirect()->route('invoices.index')
-            ->with('error', 'You do not have permission to create invoices.');
+public function create(Request $request)
+    {
+        // Get completed bookings without invoices, with valid relationships
+        $bookings = Booking::where('status', 'completed')
+            ->whereHas('car')      // Ensure booking has a car
+            ->whereHas('user')     // Ensure booking has a user
+            ->whereDoesntHave('invoice')
+            ->with(['user', 'car'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // If booking_id is passed in the URL, pre-select it
+        $selectedBookingId = $request->query('booking_id');
+
+        return view('invoices.form', compact('bookings', 'selectedBookingId'));
     }
-
-    // Get ALL completed bookings that don't have invoices (regardless of user)
-    $bookings = Booking::with(['user', 'car'])
-        ->where('status', 'completed')
-        ->whereDoesntHave('invoice')
-        ->orderBy('created_at', 'desc')
-        ->get();
-
-    // Debug - Log the count
-    \Log::info('Bookings available for invoice: ' . $bookings->count());
-
-    return view('invoices.form', compact('bookings'));
-}
     /**
      * Get booking details for invoice calculation (AJAX)
      */

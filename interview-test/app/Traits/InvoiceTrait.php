@@ -14,61 +14,90 @@ trait InvoiceTrait
     /**
      * Calculate invoice details based on booking and returned date
      */
-public function calculateInvoiceDetails($bookingId, $returnedDate)
-{
-    $booking = Booking::with(['user', 'car'])->findOrFail($bookingId);
-    
-    $startDate = Carbon::parse($booking->rental_start_date);
-    $endDate = Carbon::parse($booking->rental_end_date);
-    $returned = Carbon::parse($returnedDate);
-    
-    // Calculate hours
-    $expectedHours = $startDate->diffInHours($endDate);
-    $actualHours = $startDate->diffInHours($returned);
-    $extraHours = max(0, $actualHours - $expectedHours);
-    
-    // Pricing
-    $pricePerHour = $booking->car->rent_price_per_hour ?? 0;
-    $extraHourRate = $pricePerHour * 2; // Double for extra hours
-    
-    // Costs
-    $baseCost = $expectedHours * $pricePerHour;
-    $extraCost = $extraHours * $extraHourRate;
-    
-    // Discount based on user history (3, 5, 10+ completed bookings)
-    $discount = Invoice::calculateDiscount($booking->user_id);
-    $discountPercentage = $discount['percentage'];
-    $discountAmount = ($baseCost + $extraCost) * ($discountPercentage / 100);
-    
-    // Fine for late return (if extra hours > 0)
-    $fineAmount = 0;
-    $fineReason = null;
-    if ($extraHours > 0) {
-        $fineAmount = $extraCost * 0.10; // 10% fine on extra cost
-        $fineReason = 'Late return by ' . number_format($extraHours, 2) . ' hours';
+    public function calculateInvoiceDetails($bookingId, $returnedDate)
+    {
+        $booking = Booking::with(['user', 'car'])->findOrFail($bookingId);
+        
+        $startDate = Carbon::parse($booking->rental_start_date);
+        $endDate = Carbon::parse($booking->rental_end_date);
+        $returned = Carbon::parse($returnedDate);
+        
+        // Validate returned date is after start date
+        if ($returned->lessThan($startDate)) {
+            throw new \Exception('Returned date cannot be before rental start date.');
+        }
+        
+        // Calculate hours (round up to nearest hour)
+        $expectedHours = ceil($startDate->diffInHours($endDate));
+        $actualHours = ceil($startDate->diffInHours($returned));
+        
+        // Extra hours = Actual - Expected (only if positive)
+        $extraHours = max(0, $actualHours - $expectedHours);
+        
+        // Pricing - Get from car
+        $pricePerHour = (float) ($booking->car->rent_price_per_hour ?? 0);
+        $extraHourRate = $pricePerHour * 2; // Double for extra hours
+        
+        // Costs
+        $baseCost = $expectedHours * $pricePerHour;
+        $extraCost = $extraHours * $extraHourRate;
+        
+        // Discount based on user history (3% for 5+ completed bookings)
+        $discount = $this->calculateDiscount($booking->user_id);
+        $discountPercentage = $discount['percentage'];
+        $discountAmount = ($baseCost + $extraCost) * ($discountPercentage / 100);
+        
+        // Fine is manually entered, default to 0 (for damages or additional charges)
+        $fineAmount = 0;
+        $fineReason = null;
+        
+        // Total cost (without fine - fine will be added separately)
+        $totalCost = ($baseCost + $extraCost) - $discountAmount;
+        
+        return [
+            'booking' => $booking,
+            'expected_hours' => $expectedHours,
+            'actual_hours' => $actualHours,
+            'extra_hours' => $extraHours,
+            'price_per_hour' => $pricePerHour,
+            'extra_hour_rate' => $extraHourRate,
+            'base_cost' => $baseCost,
+            'extra_cost' => $extraCost,
+            'has_extra_hours' => $extraHours > 0,
+            'discount_percentage' => $discountPercentage,
+            'discount_amount' => $discountAmount,
+            'discount_label' => $discount['label'],
+            'has_discount' => $discountPercentage > 0,
+            'fine_amount' => 0,
+            'fine_reason' => null,
+            'total_cost' => $totalCost,
+        ];
     }
-    
-    // Total cost
-    $totalCost = ($baseCost + $extraCost) - $discountAmount + $fineAmount;
-    
-    return [
-        'booking' => $booking,
-        'expected_hours' => $expectedHours,
-        'actual_hours' => $actualHours,
-        'extra_hours' => $extraHours,
-        'price_per_hour' => $pricePerHour,
-        'extra_hour_rate' => $extraHourRate,
-        'base_cost' => $baseCost,
-        'extra_cost' => $extraCost,
-        'discount_percentage' => $discountPercentage,
-        'discount_amount' => $discountAmount,
-        'discount_label' => $discount['label'],
-        'fine_amount' => $fineAmount,
-        'fine_reason' => $fineReason,
-        'total_cost' => $totalCost,
-    ];
-}
 
+    /**
+     * Calculate discount based on user's completed bookings
+     * - 5+ completed bookings: 3% discount
+     */
+    public function calculateDiscount($userId)
+    {
+        // Count completed bookings for the user
+        $completedBookings = Booking::where('user_id', $userId)
+            ->where('status', 'completed')
+            ->count();
+
+        // Apply discount based on number of completed bookings
+        if ($completedBookings >= 5) {
+            return [
+                'percentage' => 3,
+                'label' => '3% (Loyal Customer - 5+ completed bookings)'
+            ];
+        }
+
+        return [
+            'percentage' => 0,
+            'label' => 'No discount available'
+        ];
+    }
 
     /**
      * Validate invoice data
@@ -80,6 +109,8 @@ public function calculateInvoiceDetails($bookingId, $returnedDate)
             'returned_date' => ['required', 'date'],
             'payment_method' => ['required', 'in:cash,card,bank_transfer'],
             'notes' => ['nullable', 'string', 'max:500'],
+            'fine_amount' => ['nullable', 'numeric', 'min:0'],
+            'fine_reason' => ['nullable', 'string', 'max:255'],
         ];
 
         $messages = [
@@ -89,6 +120,8 @@ public function calculateInvoiceDetails($bookingId, $returnedDate)
             'returned_date.date' => 'Please enter a valid date.',
             'payment_method.required' => 'Please select a payment method.',
             'payment_method.in' => 'Invalid payment method selected.',
+            'fine_amount.numeric' => 'Fine amount must be a valid number.',
+            'fine_amount.min' => 'Fine amount cannot be negative.',
         ];
 
         $validator = Validator::make($data, $rules, $messages);
@@ -131,6 +164,15 @@ public function calculateInvoiceDetails($bookingId, $returnedDate)
 
         // Calculate invoice details
         $details = $this->calculateInvoiceDetails($data['booking_id'], $data['returned_date']);
+        
+        // Use custom fine if provided (for damages or additional charges)
+        $fineAmount = (float) ($data['fine_amount'] ?? 0);
+        $fineReason = $data['fine_reason'] ?? null;
+        
+        // Recalculate total with fine
+        $totalCost = ($details['base_cost'] + $details['extra_cost']) 
+            - $details['discount_amount'] 
+            + $fineAmount;
 
         // Create invoice
         $invoice = Invoice::create([
@@ -143,10 +185,10 @@ public function calculateInvoiceDetails($bookingId, $returnedDate)
             'extra_cost' => $details['extra_cost'],
             'discount_amount' => $details['discount_amount'],
             'discount_percentage' => $details['discount_percentage'],
-            'fine_amount' => $details['fine_amount'],
-            'fine_reason' => $details['fine_reason'],
-            'total_cost' => $details['total_cost'],
-            'payment_status' => 'paid', // Issue invoice when paid
+            'fine_amount' => $fineAmount,
+            'fine_reason' => $fineReason,
+            'total_cost' => $totalCost,
+            'payment_status' => 'paid',
             'payment_method' => $data['payment_method'],
             'paid_at' => now(),
             'notes' => $data['notes'] ?? null,

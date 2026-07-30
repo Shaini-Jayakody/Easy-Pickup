@@ -93,22 +93,4 @@ class Invoice extends Model
         
         return $refNo;
     }
-
-    // ===== Calculate Discount Based on User History =====
-    public static function calculateDiscount($userId)
-    {
-        $bookingCount = Booking::where('user_id', $userId)
-            ->whereIn('status', ['completed', 'returned'])
-            ->count();
-
-        if ($bookingCount >= 10) {
-            return ['percentage' => 20, 'label' => '20% (Loyal Customer - 10+ bookings)'];
-        } elseif ($bookingCount >= 5) {
-            return ['percentage' => 10, 'label' => '10% (Frequent Renter - 5+ bookings)'];
-        } elseif ($bookingCount >= 3) {
-            return ['percentage' => 5, 'label' => '5% (Regular Customer - 3+ bookings)'];
-        }
-
-        return ['percentage' => 0, 'label' => 'No discount available'];
-    }
 }

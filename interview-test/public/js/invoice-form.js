@@ -6,81 +6,106 @@
 $(document).ready(function() {
     console.log('Invoice form script loaded!');
 
-    // ===== Get CSRF Token =====
     function getCsrfToken() {
         return $('meta[name="csrf-token"]').attr('content');
     }
 
-    // ===== Update All Details When Booking Selected =====
     function updateBookingDetails() {
         const $select = $('#booking_id');
         const selectedOption = $select.find('option:selected');
         
         if (selectedOption.val()) {
             // Customer Details
-            const userName = selectedOption.data('user') || '-';
-            const userNic = selectedOption.data('nic') || '-';
-            const userEmail = selectedOption.data('email') || '-';
-            const bookingRef = selectedOption.data('ref') || '-';
-            
-            $('#display-customer-name').text(userName);
-            $('#display-customer-nic').text(userNic);
-            $('#display-customer-email').text(userEmail);
-            $('#display-booking-ref').text(bookingRef);
+            $('#display-customer-name').text(selectedOption.data('user') || '-');
+            $('#display-customer-nic').text(selectedOption.data('nic') || '-');
+            $('#display-customer-email').text(selectedOption.data('email') || '-');
+            $('#display-booking-ref').text(selectedOption.data('ref') || '-');
             
             // Car Details
-            const carName = selectedOption.data('car') || '-';
-            const carRef = selectedOption.data('car-ref') || '-';
-            const carPlate = selectedOption.data('plate') || '-';
-            const price = selectedOption.data('price') || 0;
-            const start = selectedOption.data('start') || '-';
-            const end = selectedOption.data('end') || '-';
+            $('#display-car-name').text(selectedOption.data('car') || '-');
+            $('#display-car-ref').text(selectedOption.data('car-ref') || '-');
+            $('#display-car-plate').text(selectedOption.data('plate') || '-');
             
-            $('#display-car-name').text(carName);
-            $('#display-car-ref').text(carRef);
-            $('#display-car-plate').text(carPlate);
-            $('#display-price-per-hour').text('Rs. ' + parseFloat(price).toFixed(2));
+            // Get price from booking
+            const price = parseFloat(selectedOption.data('price') || 0);
+            $('#display-price-per-hour').text('Rs. ' + price.toFixed(2));
+            
+            const start = selectedOption.data('start');
+            const end = selectedOption.data('end');
             $('#display-rental-start').text(start ? new Date(start).toLocaleString() : '-');
             $('#display-rental-end').text(end ? new Date(end).toLocaleString() : '-');
             
-            // Calculate Expected Hours
             let expectedHours = 0;
             if (start && end) {
-                const startDate = new Date(start);
-                const endDate = new Date(end);
-                expectedHours = Math.round((endDate - startDate) / (1000 * 60 * 60));
+                expectedHours = Math.ceil((new Date(end) - new Date(start)) / (1000 * 60 * 60));
             }
             $('#display-expected-hours').text(expectedHours + ' hrs');
             
             // Show panels
-            $('#customer-details-panel').fadeIn(300);
-            $('#car-details-panel').fadeIn(300);
+            $('#customer-details-panel').show();
+            $('#car-details-panel').show();
             
-            // Set min date for returned date
+            // Set min date for returned date (must be after start date)
             if (start) {
-                $('#returned_date').attr('min', start);
+                // Format the start date for datetime-local input (YYYY-MM-DDTHH:mm)
+                const startDate = new Date(start);
+                const formattedStart = startDate.getFullYear() + '-' + 
+                    String(startDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                    String(startDate.getDate()).padStart(2, '0') + 'T' + 
+                    String(startDate.getHours()).padStart(2, '0') + ':' + 
+                    String(startDate.getMinutes()).padStart(2, '0');
+                $('#returned_date').attr('min', formattedStart);
             }
             
-            // Preview invoice
+            // Remove max attribute to allow any date after start
+            $('#returned_date').removeAttr('max');
+            
+            // Set default returned date to now
+            const now = new Date();
+            const defaultDateTime = now.getFullYear() + '-' + 
+                String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(now.getDate()).padStart(2, '0') + 'T' + 
+                String(now.getHours()).padStart(2, '0') + ':' + 
+                String(now.getMinutes()).padStart(2, '0');
+            $('#returned_date').val(defaultDateTime);
+            
+            // Always show invoice preview when booking is selected
+            $('#invoice-preview').show();
+            
+            // Call preview to load data
             previewInvoice();
         } else {
-            // Hide panels
-            $('#customer-details-panel').fadeOut(300);
-            $('#car-details-panel').fadeOut(300);
-            $('#invoice-preview').fadeOut(300);
+            $('#customer-details-panel').hide();
+            $('#car-details-panel').hide();
+            $('#invoice-preview').hide();
+            $('#fine-panel').hide();
         }
     }
 
-    // ===== Preview Invoice =====
     function previewInvoice() {
         const bookingId = $('#booking_id').val();
         const returnedDate = $('#returned_date').val();
         
         if (!bookingId || !returnedDate) {
-            $('#invoice-preview').fadeOut(300);
+            // Show preview with default values if no date selected yet
+            $('#invoice-preview').show();
+            $('#preview-expected-hours').text('0');
+            $('#preview-actual-hours').text('0');
+            $('#preview-extra-hours').text('0');
+            $('#preview-price').text('0.00');
+            $('#preview-extra-rate').text('0.00');
+            $('#preview-base-cost').text('0.00');
+            $('#preview-extra-cost').text('0.00');
+            $('#preview-discount').text('0.00');
+            $('#preview-fine').text('0.00');
+            $('#preview-total').text('0.00');
+            $('#discount-row').hide();
             updateSubmitButton();
             return;
         }
+        
+        // Show calculating state
+        $('#preview-total').text('Calculating...');
         
         $.ajax({
             url: '/invoices/preview',
@@ -94,98 +119,107 @@ $(document).ready(function() {
                 if (response.success) {
                     const d = response.details;
                     
-                    // Hours
+                    console.log('Invoice Details:', d);
+                    
+                    // ============================================
+                    // HOURS SECTION - Always show
+                    // ============================================
                     $('#preview-expected-hours').text(d.expected_hours);
                     $('#preview-actual-hours').text(d.actual_hours);
                     $('#preview-extra-hours').text(d.extra_hours);
                     
-                    // Pricing
+                    // ============================================
+                    // PRICING SECTION - Always show
+                    // ============================================
                     $('#preview-price').text(d.price_per_hour.toFixed(2));
                     $('#preview-extra-rate').text(d.extra_hour_rate.toFixed(2));
                     
-                    // Costs
+                    // ============================================
+                    // COST SECTION - Always show
+                    // ============================================
                     $('#preview-base-cost').text(d.base_cost.toFixed(2));
                     $('#preview-extra-cost').text(d.extra_cost.toFixed(2));
                     
-                    // Discount - Hide if no discount
-                    if (d.discount_percentage > 0) {
-                        $('#discount-row').removeClass('hidden');
+                    // ============================================
+                    // DISCOUNT - ONLY SHOW IF > 0
+                    // ============================================
+                    if (d.has_discount && d.discount_percentage > 0) {
+                        $('#discount-row').show();
                         $('#preview-discount-label').text(d.discount_percentage + '% (' + d.discount_label + ')');
                         $('#preview-discount').text(d.discount_amount.toFixed(2));
                     } else {
-                        $('#discount-row').addClass('hidden');
+                        $('#discount-row').hide();
+                        $('#preview-discount').text('0.00');
                     }
                     
-                    // Fine - Hide if no fine
-                    if (d.fine_amount > 0) {
-                        $('#fine-row').removeClass('hidden');
-                        $('#preview-fine').text(d.fine_amount.toFixed(2));
-                    } else {
-                        $('#fine-row').addClass('hidden');
-                    }
+                    // ============================================
+                    // FINE - Always show (default 0)
+                    // ============================================
+                    $('#preview-fine').text('0.00');
+                    $('#fine-reason-display').text('');
                     
-                    // Total
+                    // Reset fine fields
+                    $('#fine_amount').val(0);
+                    $('#fine_reason').val('');
+                    $('#fine-panel').hide();
+                    
+                    // ============================================
+                    // TOTAL - Always show
+                    // ============================================
                     $('#preview-total').text(d.total_cost.toFixed(2));
                     
-                    $('#invoice-preview').fadeIn(300);
+                    // Show preview
+                    $('#invoice-preview').show();
+                    updateSubmitButton();
+                } else {
+                    // Show error in preview
+                    $('#preview-total').text('Error');
                     updateSubmitButton();
                 }
             },
             error: function(xhr) {
-                $('#invoice-preview').fadeOut(300);
+                console.error('Preview error:', xhr);
+                $('#preview-total').text('Error loading data');
                 updateSubmitButton();
             }
         });
     }
 
-    // ===== Update Submit Button =====
     function updateSubmitButton() {
-        const $submitBtn = $('#submit-btn');
         const bookingId = $('#booking_id').val();
         const returnedDate = $('#returned_date').val();
         const paymentMethod = $('#payment_method').val();
+        $('#submit-btn').prop('disabled', !(bookingId && returnedDate && paymentMethod));
+    }
+
+    function recalculateTotalWithFine() {
+        const baseCost = parseFloat($('#preview-base-cost').text()) || 0;
+        const extraCost = parseFloat($('#preview-extra-cost').text()) || 0;
+        const discount = parseFloat($('#preview-discount').text()) || 0;
+        const fine = parseFloat($('#fine_amount').val()) || 0;
         
-        if (bookingId && returnedDate && paymentMethod) {
-            $submitBtn.prop('disabled', false);
-            $submitBtn.css('opacity', '1');
-            $submitBtn.css('cursor', 'pointer');
+        const total = baseCost + extraCost - discount + fine;
+        $('#preview-total').text(total.toFixed(2));
+        $('#preview-fine').text(fine.toFixed(2));
+        
+        const fineReason = $('#fine_reason').val();
+        if (fineReason) {
+            $('#fine-reason-display').text(fineReason);
         } else {
-            $submitBtn.prop('disabled', true);
-            $submitBtn.css('opacity', '0.6');
-            $submitBtn.css('cursor', 'not-allowed');
+            $('#fine-reason-display').text('');
+        }
+        
+        // Show/hide fine panel
+        if (parseFloat($('#fine_amount').val()) > 0 || $('#fine_reason').val()) {
+            $('#fine-panel').show();
+        } else {
+            $('#fine-panel').hide();
         }
     }
 
-    // ===== Validate Form =====
-    function validateForm() {
-        const bookingId = $('#booking_id').val();
-        const returnedDate = $('#returned_date').val();
-        const paymentMethod = $('#payment_method').val();
-        let isValid = true;
-        let errors = [];
-
-        // Clear previous errors
-        $('.error-msg').hide().text('');
-
-        if (!bookingId) {
-            $('#booking_id-error').text('Please select a booking.').show();
-            isValid = false;
-        }
-
-        if (!returnedDate) {
-            $('#returned_date-error').text('Please enter the returned date and time.').show();
-            isValid = false;
-        }
-
-        if (!paymentMethod) {
-            $('#payment_method-error').text('Please select a payment method.').show();
-            isValid = false;
-        }
-
-        return isValid;
-    }
-
-    // ===== Event Handlers =====
+    // ============================================
+    // EVENT HANDLERS
+    // ============================================
     $('#booking_id').on('change', function() {
         updateBookingDetails();
         updateSubmitButton();
@@ -203,30 +237,53 @@ $(document).ready(function() {
         $('#payment_method-error').hide();
     });
 
-    // ===== Set default returned date =====
+    // Fine amount changes - recalculate total
+    $('#fine_amount').on('focus', function() {
+        $('#fine-panel').show();
+    });
+
+    $('#fine_amount, #fine_reason').on('change keyup', function() {
+        recalculateTotalWithFine();
+    });
+
+    // ============================================
+    // SET DEFAULT RETURNED DATE - REMOVE MAX
+    // ============================================
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const defaultDateTime = year + '-' + month + '-' + day + 'T' + hours + ':' + minutes;
-    $('#returned_date').attr('max', defaultDateTime);
+    const defaultDateTime = now.getFullYear() + '-' + 
+        String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(now.getDate()).padStart(2, '0') + 'T' + 
+        String(now.getHours()).padStart(2, '0') + ':' + 
+        String(now.getMinutes()).padStart(2, '0');
+    
+    // Remove max attribute to avoid validation errors
+    $('#returned_date').removeAttr('max');
     $('#returned_date').val(defaultDateTime);
 
-    // ===== Form Submit =====
+    // ============================================
+    // FORM SUBMIT
+    // ============================================
     $('#invoice-form').on('submit', function(e) {
         e.preventDefault();
         
-        // Validate
-        if (!validateForm()) {
-            // Scroll to first error
-            const firstError = $('.error-msg:visible').first();
-            if (firstError.length) {
-                $('html, body').animate({
-                    scrollTop: firstError.closest('.form-group').offset().top - 100
-                }, 500);
-            }
+        let isValid = true;
+        $('.error-msg').hide().text('');
+        
+        if (!$('#booking_id').val()) {
+            $('#booking_id-error').text('Please select a booking.').show();
+            isValid = false;
+        }
+        if (!$('#returned_date').val()) {
+            $('#returned_date-error').text('Please enter the returned date and time.').show();
+            isValid = false;
+        }
+        if (!$('#payment_method').val()) {
+            $('#payment_method-error').text('Please select a payment method.').show();
+            isValid = false;
+        }
+        
+        if (!isValid) {
+            $('.error-msg:visible').first().closest('.form-group').find('input, select').focus();
             return;
         }
         
@@ -234,18 +291,18 @@ $(document).ready(function() {
         $('#submit-spinner').show();
         $('#submit-btn').prop('disabled', true);
         
-        const formData = {
-            booking_id: $('#booking_id').val(),
-            returned_date: $('#returned_date').val(),
-            payment_method: $('#payment_method').val(),
-            notes: $('#notes').val(),
-            _token: getCsrfToken()
-        };
-        
         $.ajax({
             url: '/invoices/store',
             type: 'POST',
-            data: formData,
+            data: {
+                booking_id: $('#booking_id').val(),
+                returned_date: $('#returned_date').val(),
+                payment_method: $('#payment_method').val(),
+                notes: $('#notes').val(),
+                fine_amount: $('#fine_amount').val() || 0,
+                fine_reason: $('#fine_reason').val() || null,
+                _token: getCsrfToken()
+            },
             dataType: 'json',
             success: function(response) {
                 $('#submit-text').show();
@@ -253,9 +310,8 @@ $(document).ready(function() {
                 $('#submit-btn').prop('disabled', false);
                 
                 if (response.success) {
-                    const swal = getSwal();
-                    if (isSwalAvailable() && swal) {
-                        swal.fire({
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
                             icon: 'success',
                             title: 'Invoice Generated!',
                             text: response.message,
@@ -277,41 +333,22 @@ $(document).ready(function() {
                 
                 if (xhr.status === 422 && xhr.responseJSON.errors) {
                     const errors = xhr.responseJSON.errors;
-                    const errorMsg = typeof errors === 'string' ? errors : errors.join('\n');
-                    
-                    // Show errors on fields
                     if (typeof errors === 'object') {
                         $.each(errors, function(field, messages) {
-                            const $error = $('#' + field + '-error');
-                            if ($error.length) {
-                                $error.text(messages[0]).show();
-                                $('#' + field).addClass('is-invalid');
-                            }
+                            $('#' + field + '-error').text(messages[0]).show();
+                            $('#' + field).addClass('is-invalid');
                         });
                     }
-                    
-                    const swal = getSwal();
-                    if (isSwalAvailable() && swal) {
-                        swal.fire({
-                            icon: 'error',
-                            title: 'Validation Error',
-                            text: errorMsg,
-                            confirmButtonColor: '#dc3545'
-                        });
+                    const errorMsg = typeof errors === 'string' ? errors : Object.values(errors).flat().join('\n');
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'error', title: 'Validation Error', text: errorMsg, confirmButtonColor: '#dc3545' });
                     } else {
                         alert('❌ ' + errorMsg);
                     }
                 } else {
                     const message = xhr.responseJSON?.message || 'Error creating invoice. Please try again.';
-                    
-                    const swal = getSwal();
-                    if (isSwalAvailable() && swal) {
-                        swal.fire({
-                            icon: 'error',
-                            title: 'Error!',
-                            text: message,
-                            confirmButtonColor: '#dc3545'
-                        });
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'error', title: 'Error!', text: message, confirmButtonColor: '#dc3545' });
                     } else {
                         alert('❌ ' + message);
                     }
@@ -320,20 +357,22 @@ $(document).ready(function() {
         });
     });
 
-    // ===== Get SweetAlert =====
-    function getSwal() {
-        if (typeof Swal !== 'undefined') {
-            return Swal;
-        }
-        if (typeof window.Swal !== 'undefined') {
-            return window.Swal;
-        }
-        return null;
-    }
-
-    function isSwalAvailable() {
-        return getSwal() !== null;
-    }
+    // ============================================
+    // INITIAL SETUP - Show preview with default values
+    // ============================================
+    // Show invoice preview container immediately with default values
+    $('#invoice-preview').show();
+    $('#preview-expected-hours').text('0');
+    $('#preview-actual-hours').text('0');
+    $('#preview-extra-hours').text('0');
+    $('#preview-price').text('0.00');
+    $('#preview-extra-rate').text('0.00');
+    $('#preview-base-cost').text('0.00');
+    $('#preview-extra-cost').text('0.00');
+    $('#preview-discount').text('0.00');
+    $('#preview-fine').text('0.00');
+    $('#preview-total').text('0.00');
+    $('#discount-row').hide();
 
     console.log('Invoice form initialized successfully!');
 });
